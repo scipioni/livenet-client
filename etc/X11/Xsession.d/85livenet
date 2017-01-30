@@ -1,0 +1,39 @@
+# redefine session using ~/.session
+
+if [ -f ${HOME}/.session ]; then
+    SESSION=$( sed -n -e "s/Session=\(\w\+\)/\1/p" ${HOME}/.session )
+    [ -f /etc/livenet/sessions/${SESSION}.desktop ] || SESSION=
+fi
+
+if [ -n "${SESSION}" ]; then
+    echo "SESSION=${SESSION}"
+    echo "STARTUP=${STARTUP}"
+    EXEC=$( sed -n -e 's/Exec=\(.*\)/\1/p' /etc/livenet/sessions/${SESSION}.desktop )
+    echo "EXEC=$EXEC"
+    STARTUP=$( echo "$STARTUP" | sed -e "s/\(--exit-with-session\) .*$/\1/" ) # remove last word
+    STARTUP="${STARTUP} ${EXEC}"
+    echo "STARTUP=${STARTUP}"
+    unset UPSTART
+fi
+
+if [ "${BASESESSION}" = "gnome-session" ]; then
+   SKEL=/etc/skel-${DESKTOP_SESSION}
+   if [ -d ${SKEL} ]; then
+      mkdir -p ${HOME}
+      rsync -a ${SKEL}/ ${HOME}/
+   fi
+
+   # we want ubuntu session here
+   export COMPIZ_CONFIG_PROFILE="ubuntu"
+   export BASESESSION=gnome-session
+   export DEFAULTS_PATH=/usr/share/gconf/ubuntu.default.path
+   export DESKTOP_SESSION=ubuntu
+   export GDMSESSION=ubuntu
+   export MANDATORY_PATH=/usr/share/gconf/ubuntu.mandatory.path
+   export XDG_CONFIG_DIRS=/etc/xdg/xdg-ubuntu:/usr/share/upstart/xdg:/etc/xdg
+   export XDG_DATA_DIRS=/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/
+
+fi
+export PATH=${HOME}/bin:${PATH}
+
+( sleep 15 && ln-client --monitors-clone ) &

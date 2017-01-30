@@ -1,0 +1,59 @@
+#!/bin/sh
+#
+# users in /home/*
+#
+# The environment variables passed by pam-script onto the script
+# (all will exist but some may be null if not applicable):
+#   PAM_SERVICE - the application that's invoking the PAM stack
+#   PAM_TYPE    - the module-type (e.g. auth,account,session,password)
+#   PAM_USER    - the user being authenticated into
+#   PAM_RUSER   - the remote user, the user invoking the application
+#   PAM_RHOST   - remote host
+#   PAM_TTY     - the controlling tty
+
+
+[ $(id -u ${PAM_USER}) -lt 500 ] && exit 0
+
+. /etc/livenet/livenet.conf
+set +e
+
+HOME=$(getent passwd ${PAM_USER} | awk -F':' '{print $6}')
+localgroups=$( groups ${PAM_USER} )
+
+for SKEL in /etc/skel-${PAM_USER} /etc/skel; do
+    [ -d ${SKEL} ] && break
+done
+
+# activate autofs if needed
+ls ${HOME} >/dev/null 2>&1
+
+do_make_home() { 
+    echo "Making home=$HOME from skel=$SKEL user=$PAM_USER" | logger -t livenet
+    mkdir -p ${HOME}
+    rsync -a ${SKEL}/ ${HOME}/
+    chown -R ${PAM_USER} ${HOME}
+    chmod 700 ${HOME}
+}
+
+echo "$localgroups" | grep -q kiosk
+if [ $? = 0 ]; then
+    #################
+    # kiosk mode
+    #################
+
+    echo "user ${PAM_USER} in kiosk mode" | logger -t livenet
+    rm -fR ${HOME}
+    log_lightdm "Kiosk mode"
+    do_make_home
+
+elif [ -n "${PAM_USER}" ] && [ ! -d ${HOME} ]; then
+    #################
+    # normal mode
+    #################
+
+    log_lightdm "Home"
+    do_make_home
+fi
+
+exit 0
+

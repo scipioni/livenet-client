@@ -1,0 +1,15 @@
+Source: livenet-client
+Section: misc
+Priority: extra
+Maintainer: Stefano Scipioni <scipio.it@gmail.com>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.5
+Homepage: http://www.livenet.org
+#Vcs-Git: git://git.debian.org/collab-maint/livenet-client-0.1.git
+#Vcs-Browser: http://git.debian.org/?p=collab-maint/livenet-client-0.1.git;a=summary
+
+Package: livenet-client
+Architecture: all
+Depends: initramfs-tools, sysv-rc-conf, python-passlib, pv, screen, byobu, lsof, pigz, rsync, nfs-common, libpam-script, xloadimage, conntrack
+Description: Livenet client
+ Livenet image 

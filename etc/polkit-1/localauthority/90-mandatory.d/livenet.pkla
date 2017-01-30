@@ -1,0 +1,6 @@
+[Kiosk mode]
+Identity=unix-group:kiosk
+Action=org.freedesktop.udisks2.filesystem-mount;org.freedesktop.udisks2.modify-device
+ResultAny=no
+ResultInactive=no
+ResultActive=no

@@ -1,0 +1,2 @@
+# bug on NFS home
+export ICEAUTHORITY=/tmp/.ICEauthority.$USER

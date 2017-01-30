@@ -1,0 +1,10 @@
+cfg80211
+mac80211
+iwlcore 
+iwlagn 
+arc4
+ath9k_common 
+ath9k 
+ath9k_hw 
+ath
+

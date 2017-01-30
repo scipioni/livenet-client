@@ -1,0 +1,10 @@
+[LightDM]
+sessions-directory=/etc/livenet/sessions
+
+[SeatDefaults]
+greeter-session=unity-greeter
+greeter-hide-users=true
+allow-guest=false
+user-session=ubuntu
+
+session-cleanup-script=ln-client --reset-lightdm

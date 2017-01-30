@@ -1,0 +1,3 @@
+LABEL=LROOT         /               ext4    noatime,nodiratime,commit=100           0       0
+LABEL=LSWAP         none            swap    sw                                      0       0
+

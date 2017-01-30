@@ -1,0 +1,54 @@
+#!/bin/bash
+
+TIMEOUT_NAC=40
+
+#exec > /tmp/start 2>&1
+#set -x
+
+. /etc/livenet/livenet.conf
+
+set +e
+
+grep -q "^${PAM_USER}:" /etc/passwd
+[ $? = 0 ] && exit 0 # local user, no NAC
+
+WPACONF=/run/user/${PAM_USER}/wpa_supplicant.conf
+
+if [ "${livenet_8021x}" = "true" ] && [ "${PAM_SERVICE}" = "lightdm" ]; then
+    if [ -f ${WPACONF} ]; then
+        echo "802.1x enabled" | logger
+
+        umount -f ${HOME} >/dev/null 2>&1
+        dhcp_release
+        wpa_supplicant -B -c ${WPACONF} -D wired -i eth0 -W
+        log_lightdm "WPA login"
+        echo logoff | wpa_cli
+        sleep 4
+        echo logon | wpa_cli
+       
+        i=0 
+        while [ 1 ]; do
+            wpa_cli status | grep "EAP state" | grep SUCCESS
+            if [ $? = 0 ]; then
+                break
+            fi
+
+            i=$((i+1))
+            if [ $i -gt ${TIMEOUT_NAC} ]; then
+                echo "wpa_supplicant died" | logger 
+                killall wpa_supplicant
+                dhcp_renew
+
+                # pam exit at login (see pam.d/common-session)
+                exit 100
+            fi
+            echo "wpa_supplicant sleep" | logger 
+            sleep 1
+        done
+        rm -f ${WPACONF}
+        log_lightdm "DHCP wait ..."
+        dhcp_renew && log_lightdm "DHCP OK"
+    fi
+fi
+
+exit 0

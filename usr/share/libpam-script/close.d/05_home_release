@@ -1,0 +1,38 @@
+#!/bin/bash
+
+set +e
+
+[ $(id -u ${PAM_USER}) -lt 500 ] && exit 0
+
+. /etc/livenet/livenet.conf
+
+if [ "${PAM_SERVICE}" = "lightdm" ]; then
+    log_lightdm "HOME"
+    HOME=$(getent passwd ${PAM_USER} | awk -F':' '{print $6}')
+    SEC=0
+    while [ 1 ]; do
+        SEC=$((SEC+1))
+        lsof -u ${PAM_USER} >/dev/null 2>&1
+        if [ $? = 1 ]; then
+            break
+        fi
+        [ ${SEC} -gt 3 ] && kill $(lsof -t -u ${PAM_USER})
+        if [ ${SEC} -gt 5 ]; then
+            kill -9 $(lsof -t -u ${PAM_USER})
+            break
+        fi 
+        echo "lsof -t -u " $(lsof -t -u ${PAM_USER})
+	echo "lsof -u " $(lsof -u ${PAM_USER})
+        SEC=$((SEC+1))
+        sleep 1
+    done
+
+    if [ -f ${HOME}/.temporary ]; then
+        log_lightdm "HOME deleted"
+        rm -fR ${HOME}/
+    fi	    
+fi
+
+umount -f ${HOME} >/dev/null 2>&1
+
+exit 0

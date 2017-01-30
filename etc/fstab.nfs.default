@@ -1,0 +1,4 @@
+none                /           tmpfs   defaults,noatime                                0       0
+#LABEL=LSWAP         none        swap    sw                                              0       2
+
+

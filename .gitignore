@@ -1,0 +1,6 @@
+debian/livenet-client
+debian/livenet-client.debhelper.log
+debian/files
+debian/livenet-client.postinst.debhelper
+debian/livenet-client.postrm.debhelper
+debian/livenet-client.substvars

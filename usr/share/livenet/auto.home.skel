@@ -1,0 +1,30 @@
+#!/bin/bash
+
+
+NFS="homes:/homes"
+OPTS="vers=4,async,nolock"
+TMP="/home/tmp/"
+
+
+# $1 is passed-over from automount
+key="$1" 
+
+RESULT=""
+M=/tmp/.test
+mkdir -p $M
+mount -t nfs -o ${OPTS},ro ${NFS} $M
+if [ $? = 0 ]; then
+    if [ -d ${M}/${key} ]; then
+        RESULT="-wsize=8192,rsize=8192,${OPTS} homes:/homes/&"
+    fi
+    umount $M
+fi
+
+if [ -z "${RESULT}" ]; then
+    HOME="${TMP}/${key}"
+    mkdir -p ${HOME}
+    touch ${HOME}/.temporary
+    RESULT="-bind :${HOME}/${key}"
+fi
+
+echo $RESULT

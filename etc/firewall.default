@@ -1,0 +1,15 @@
+
+# this script enable network
+
+/sbin/iptables -P INPUT ACCEPT
+/sbin/iptables -P FORWARD ACCEPT
+/sbin/iptables -P OUTPUT ACCEPT
+
+# ssh administration
+iptables -A INPUT -p tcp --dport 22 -m state --state NEW -j ACCEPT
+
+# icmp from outside
+iptables -A INPUT -p icmp -j ACCEPT
+
+/usr/sbin/conntrack -F
+
