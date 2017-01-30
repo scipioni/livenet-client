@@ -53,6 +53,16 @@ elif [ -n "${PAM_USER}" ] && [ ! -d ${HOME} ]; then
 
     log_lightdm "Home"
     do_make_home
+    [ -f ${HOME}/.temporary ] && log_lightdm "Home temporanea"
+fi
+
+if [ -f ${HOME}/.temporary ]; then
+    #################
+    # temporary home created in /etc/auto.*
+    #################
+
+    log_lightdm "Home temporanea"
+    do_make_home # to change permissions
 fi
 
 exit 0

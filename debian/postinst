@@ -4,6 +4,3 @@ echo "Executing ln-mng --bootstrap"
 ln-mng --bootstrap
 
 pam-auth-update --package
-
-systemctl enable  ln-install.service --no-reload
-systemctl enable  ln-grub.service --no-reload

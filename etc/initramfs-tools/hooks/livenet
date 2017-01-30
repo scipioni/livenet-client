@@ -40,7 +40,7 @@ set -e
 
 # tastiera italiana in initram
 # attivata da do_debug_shell (loadkeys /etc/boottime.kmap.gz)
-cp -au /etc/console-setup/cached.kmap.gz ${DESTDIR}/etc/boottime.kmap.gz
+#cp -au /etc/console-setup/cached.kmap.gz ${DESTDIR}/etc/boottime.kmap.gz
 
 # nfs4
 #copy_exec /usr/sbin/rpc.idmapd /bin
@@ -56,18 +56,19 @@ cp -au /etc/console-setup/cached.kmap.gz ${DESTDIR}/etc/boottime.kmap.gz
 
 # debug purpose ################
 # ricordati di mettere FRAMEBUFFER=n in /etc/initramfs-tools/conf.d/splash
-copy_exec /sbin/ifconfig
-copy_exec /sbin/lsmod /bin
-copy_exec /usr/bin/lspci /bin
+#copy_exec /sbin/ifconfig
+#copy_exec /sbin/lsmod /bin
+#copy_exec /usr/bin/lspci /bin
+#copy_exec /usr/bin/less /bin
 #################################
 
 # wireless #####################
-copy_exec /sbin/iwconfig
-copy_exec /sbin/iwlist
-copy_exec /sbin/iwpriv
-copy_exec /sbin/iwevent
-copy_exec /sbin/iwgetid
-copy_exec /sbin/iwspy
-copy_exec /usr/sbin/rfkill
+#copy_exec /sbin/iwconfig
+#copy_exec /sbin/iwlist
+#copy_exec /sbin/iwpriv
+#copy_exec /sbin/iwevent
+#copy_exec /sbin/iwgetid
+#copy_exec /sbin/iwspy
+#copy_exec /usr/sbin/rfkill
 #cp -au /lib/firmware/iwl*-[13].ucode ${DESTDIR}/lib/firmware
 #################################

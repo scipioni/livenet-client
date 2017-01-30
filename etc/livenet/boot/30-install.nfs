@@ -1,0 +1,6 @@
+if [ "${LIVENET_ACTION}" = "install" ] || [ "${LIVENET_ACTION}" = "install_force" ]; then
+    update-alternatives --set lightdm.conf /etc/lightdm/lightdm.conf.nfs.special
+    service_switch ln-install on
+else
+    service_switch ln-install off
+fi

@@ -96,15 +96,15 @@ do_bootstrap() {
     fi
     
     # ln-shutdown service start/stop
-    #if [ ! -f /etc/rc0.d/S19ln-shutdown ]; then
-    #    echo "Activate ln-shutdown in runlevel 0"
-    #    ln -s /etc/init.d/ln-shutdown /etc/rc0.d/S19ln-shutdown
-    #fi
-   # 
-   # if [ ! -f /etc/rc6.d/S19ln-shutdown ]; then
-   #     echo "Activate ln-shutdown in runlevel 6"
-   #     ln -s /etc/init.d/ln-shutdown /etc/rc6.d/S19ln-shutdown
-    #fi
+    if [ ! -f /etc/rc0.d/S19ln-shutdown ]; then
+        echo "Activate ln-shutdown in runlevel 0"
+        ln -s /etc/init.d/ln-shutdown /etc/rc0.d/S19ln-shutdown
+    fi
+    
+    if [ ! -f /etc/rc6.d/S19ln-shutdown ]; then
+        echo "Activate ln-shutdown in runlevel 6"
+        ln -s /etc/init.d/ln-shutdown /etc/rc6.d/S19ln-shutdown
+    fi
     
     # install user needed by install mode (lightdm autologin user)
     id install >/dev/null 2>/dev/null
@@ -117,9 +117,6 @@ do_bootstrap() {
 	 
     # rebuild initram 
     dpkg-reconfigure linux-image-${KERNEL}
-
-    systemctl enable ln-install.service --no-reload
-    systemctl enable ln-grub.service --no-reload
 }
 
 do_diversions_build() {
@@ -289,6 +286,103 @@ do_clean() {
     done
 }
 
+do_clean_old() {
+    if [ -f /usr/share/unity/lenses/shopping/shopping.lens ]; then
+        echo "Remove unity-lens-shopping"
+        apt-get remove --purge unity-lens-shopping >/dev/null
+    fi
+
+    # disable accountsservice
+    if [ -x /usr/lib/accountsservice/accounts-daemon ]; then
+        if [ -z "${accountsdaemon}" ] || [ "${accountsdaemon}" = "true" ]; then
+            echo "Disable accounts-daemon"
+            chmod -x /usr/lib/accountsservice/accounts-daemon
+        fi
+    fi
+
+    # disable zeitgeist
+    for i in /usr/bin/zeitgeist-datahub /usr/lib/zeitgeist/zeitgeist-fts; do
+        if [ -x ${i} ]; then
+            echo "Disable zeitgeist $i"
+            chmod -x ${i}
+        fi
+    done
+    
+    # disable geoclue
+    for i in /usr/lib/geoclue/geoclue-master /usr/lib/ubuntu-geoip/ubuntu-geoip-provider; do
+        if [ -x ${i} ]; then
+            echo "Disable geoclue $i"
+            chmod -x ${i}
+        fi
+    done
+    
+    # disable evolution
+    for i in /usr/lib/evolution/evolution-source-registry; do
+        if [ -x ${i} ]; then
+            echo "Disable evolution $i"
+            chmod -x ${i}
+        fi
+    done
+
+    # disable amazon and ubuntumusic
+    for i in \
+        /usr/share/applications/ubuntu-amazon-default.desktop \
+        /usr/share/applications/UbuntuOneMusiconeubuntucom.desktop \
+        ; do
+        if [ -f ${i} ]; then
+            echo "Disable app $i"
+            mv ${i} ${i}.disabled
+        fi
+    done
+    
+    if [ ! -d /vms ]; then
+        echo "Create /vms dir"
+        mkdir -p /vms
+        touch /vms/.empty
+    fi
+
+    if [ ! -d /mnt/vms ]; then
+        echo "Create /mnt/vms dir"
+        mkdir -p /mnt/vms
+        touch /mnt/vms/.empty
+    fi
+    
+
+    # dvd codecs
+    dpkg -s libdvdcss2 >/dev/null 2>&1
+    if [ $? != 0 ]; then
+        echo "Installing DVD codecs"
+        if [ -f /usr/share/doc/libdvdread4/install-css.sh ]; then
+            /usr/share/doc/libdvdread4/install-css.sh
+        else
+            echo "Install all packages needed with ln-mng --packages"
+        fi
+    fi
+
+    # for usb fs ln-usbkey
+    mkdir -p /mnt/usb
+    [ -f "/mnt/usb/Inserire la chiavetta e premere F5" ] || touch "/mnt/usb/Inserire la chiavetta e premere F5"
+
+    if [ ! -d /var/lib/clamav ]; then
+        echo "Create /var/lib/clamav"
+        mkdir -p /var/lib/clamav
+        touch /var/lib/clamav/.empty
+        chown -R clamav:clamav /var/lib/clamav
+    fi
+    
+    # install user needed by install mode (lightdm autologin user)
+    id install >/dev/null 2>/dev/null
+    if [ $? != 0 ]; then
+        echo "Create 'install' user"
+        useradd -g 100 install
+    fi
+    
+    do_check_lens off
+    do_check_lens on
+
+    do_check_services off
+    do_check_services on 
+}
 
 while true; do
     case $1 in

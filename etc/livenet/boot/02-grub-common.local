@@ -1,0 +1,2 @@
+service_switch grub-common on
+service_switch ln-grub-update on

@@ -1,0 +1,2 @@
+service_switch grub-common off
+service_switch ln-grub-update off

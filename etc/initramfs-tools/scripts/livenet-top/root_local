@@ -25,13 +25,6 @@ if [ -z "${ROOT}" ]; then
     exit 0
 fi
 
-# traslate UUID into file block
-echo "$ROOT" | grep -q "UUID="
-if [ $? = 0 ]; then
-    eval $ROOT # to have UUID=
-    ROOT=/dev/disk/by-uuid/$UUID
-fi
-
 eval $(fstype < ${ROOT}) # Get the root filesystem type
 modprobe ${FSTYPE}
 

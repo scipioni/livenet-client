@@ -21,7 +21,6 @@ usage()
         Usage: $PROGNAME <command> [--help] 
 
         --install: install livenet on LROOT partition
-	--install-with-gui: install livenet (called by ln-install service)
         [--force] --boot {local|nfs}: prepare local disk to boot on disk or nfs
         --standalone: revert image to standalone mode
         --reset-lightdm: clean lightdm between sessions
@@ -32,21 +31,20 @@ usage()
         --kiosk-loop: kiosk session
         --monitors-clone: clone second monitor (if connected) to first monitor
 	--vboxsetup: rebuild virtualbox modules
-	--grub-update: run grub-update if needed
 
         Options:
 EOF
 }
 
 SHORTOPTS="hv"
-LONGOPTS="help,version,install,install-with-gui,grub-update,boot:,force,standalone,sync-state,reset-lightdm,session-wait,user:,scan:,shutdown,kiosk,kiosk-loop,monitors-clone,vboxsetup"
+LONGOPTS="help,version,install,boot:,force,standalone,sync-state,reset-lightdm,session-wait,user:,scan:,shutdown,kiosk,kiosk-loop,monitors-clone,vboxsetup"
 
 ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@" )
 eval set -- "$ARGS"
 
 do_install() {
-    #DEVICE=eth0
-    if [ ! -f /${STATETMP}/net-*.conf ]; then
+    DEVICE=eth0
+    if [ ! -f /${STATETMP}/net-${DEVICE}.conf ]; then
         echo "Works only in nfs mode"
         exit 1
     fi
@@ -63,7 +61,7 @@ do_install() {
     start_time=$(date +%s)
 
     echo -n "Formatting root partition ${ROOT_LABEL} ..."
-    mkfs.ext4 -q -F -L ${ROOT_LABEL} /dev/disk/by-label/${ROOT_LABEL}
+    mkfs.ext4 -q -L ${ROOT_LABEL} /dev/disk/by-label/${ROOT_LABEL}
     [ $? = 0 ] && echo "OK"
     
     ( sleep 2 && tune2fs -i0 -c0 /dev/disk/by-label/${ROOT_LABEL} > /dev/null 2>&1 ) &
@@ -351,18 +349,6 @@ EOF
     rm -f /tmp/dkms
 }
 
-
-do_grub_update() {
-    if [ /etc/default/grub -nt /boot/grub/grub.cfg ] \
-        || [ /etc/grub.d/01_security -nt /boot/grub/grub.cfg ] \
-        || [ /boot/initrd -nt /boot/grub/grub.cfg ] \
-        || [ /etc/grub.d/30_os-prober -nt /boot/grub/grub.cfg ]; then
-        echo "Updating grub"
-        /usr/sbin/update-grub
-    fi
-}
-
-
 while true; do
    case $1 in
       -h|--help)
@@ -377,27 +363,6 @@ while true; do
 	do_install
 	break
 	;;
-      --install-with-gui)
-	if [ "${LIVENET_ACTION}" != "install" ] && [ "${LIVENET_ACTION}" != "install_force" ]; then
-	   echo "no livenet_action=install in cmdline"
-	   exit 0
-	fi
-        check_jail
-    	update-alternatives --set lightdm.conf /etc/lightdm/lightdm.conf.nfs.special
-	systemctl restart lightdm
-	do_install
-    	sleep 5
-    	update-alternatives /etc/lightdm/lightdm.conf
-	systemctl restart lightdm
-	if [ "${LIVENET_ACTION_END}" = "halt" ]; then
-	    halt -p
-	fi
-	if [ "${LIVENET_ACTION_END}" = "reboot" ]; then
-	    reboot -f
-	fi
-	break
-	;;
-
       --force)
         FORCE=true
         ;;
@@ -457,10 +422,6 @@ while true; do
         do_vboxsetup $1
         exit 0
         ;;
-      --grub-update)
-	do_grub_update
-	break
-	;;
       --)
         shift
         break
