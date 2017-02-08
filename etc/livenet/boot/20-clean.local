@@ -21,3 +21,5 @@ rm -fR /var/lib/lightdm
 mkdir -p /var/lib/lightdm
 chown lightdm:lightdm /var/lib/lightdm
 
+# delete /media
+rm -fR /media/*
