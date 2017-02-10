@@ -46,13 +46,17 @@ if [ $? = 0 ]; then
     log_lightdm "Kiosk mode"
     do_make_home
 
-elif [ -n "${PAM_USER}" ] && [ ! -d ${HOME} ]; then
-    #################
-    # normal mode
-    #################
+elif [ -n "${PAM_USER}" ]; then 
+	[ -f ${HOME}/.temporary ] && rm -fR ${HOME}
 
-    log_lightdm "Home"
-    do_make_home
+	if [ ! -d ${HOME} ]; then
+		#################
+		# normal mode
+		#################
+
+		log_lightdm "Home"
+		do_make_home
+    fi
 fi
 
 exit 0
