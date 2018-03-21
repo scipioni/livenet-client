@@ -2,7 +2,7 @@ MODULES=most
 BUSYBOX=y
 COMPRESS=gzip
 BOOT=livenet
-DEVICE=eth0
+DEVICE=ens3
 NFSROOT=auto
 
 # override function defined in /usr/share/initramfs-tools/hook-functions
