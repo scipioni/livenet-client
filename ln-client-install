@@ -1,6 +1,7 @@
 #!/bin/bash
-cd /tmp/livenet/client
+cd /tmp/livenet-client
 git checkout bionic
+git pull
 rsync -avb etc/ /etc/
 rsync -avb usr/ /usr/
 rsync -avb debian /
