@@ -10,6 +10,6 @@ Homepage: http://www.livenet.org
 
 Package: livenet-client
 Architecture: all
-Depends: initramfs-tools, sysv-rc-conf, python-passlib, pv, screen, byobu, lsof, pigz, rsync, nfs-common, libpam-script, xloadimage, conntrack
+Depends: initramfs-tools, sysv-rc-conf, python-passlib, pv, screen, byobu, lsof, pigz, rsync, nfs-common, libpam-script, xloadimage, conntrack, parted, bcache-tools
 Description: Livenet client
  Livenet image 
