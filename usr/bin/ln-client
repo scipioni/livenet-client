@@ -82,15 +82,17 @@ do_install() {
 
 do_install_grub(){
     
-    zfs set mountpoint=/ rpool/ROOT/hope
+
     zfs mount rpool/ROOT/hope
+    zfs mount rpool/ROOT/boot
+
     mount --rbind /dev  /mnt/dev
     mount --rbind /proc /mnt/proc
     mount --rbind /sys  /mnt/sys
     chroot /mnt /bin/bash -c "rm /etc/fstab" 
-    cat > /mnt/etc/fstab <<EOF
-    rpool/ROOT/hope / zfs defaults,noatime 0 0
-EOF
+    #cat > /mnt/etc/fstab <<EOF
+    #rpool/ROOT/hope / zfs defaults,noatime 0 0
+#EOF
     
     #DISK=$(find /dev/disk/ -type l -ilname "*da" | grep by-id )
     #echo DISK=$DISK >> /mnt/pippo
