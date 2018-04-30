@@ -105,11 +105,7 @@ do_install_grub(){
     chroot /mnt /bin/bash -c "update-grub"
 
     mount | grep -v zfs | tac | awk '/\/mnt/ {print $3}' | xargs -i{} umount -lf {}
-    umount /mnt/sys
-    umount /mnt/dev
-    umount /mnt/proc
-
-    zfs umount rpool/ROOT/hope
+    
     zpool export rpool
     
     echo "FINISH, reboot"
