@@ -49,20 +49,29 @@ do_install() {
   # FIND FIRST DISK FOR ROOT
   DISK=$(find /dev/disk/ -type l -ilname "*da" | grep by-id )
   #CLEAN DISK
+  echo "Deleting all existing partitions"
   sgdisk --clear -g $DISK
+  echo "Deleting all existing partitions"
+
   sgdisk -a1 -n2:34:2047  -t2:EF02 $DISK
+  echo "UEFI partition creation"
   sgdisk     -n3:1M:+512M -t3:EF00 $DISK
   parted $DISK set 3 bios_grub on # needed for embedding grub in this partition 
+  echo "Legacy boot loader partition creation"
   sgdisk     -n9:-8M:0    -t9:BF07 $DISK
+  echo "Main partition creation"
   sgdisk     -n1:0:0      -t1:BF01 $DISK
 
+  echo "Creation of main zfs pool: rpool"
   zpool create -o ashift=12 \
       -O atime=off -O canmount=off -O compression=lz4 -O normalization=formD \
       -O mountpoint=/ -R /mnt -f \
       rpool ${DISK}-part1
   
+  echo "Creation of volume: rpool/ROOT"
   zfs create -o canmount=off -o mountpoint=none rpool/ROOT
 
+  echo "Cloning latest snapshot from server"
   #TODO add service
   ssh lnsrvsend@192.168.122.219 "zfs send LNPZFS/livenet/images/hope@now | bzip2 -c |" bzcat  | zfs recv rpool/ROOT/hope
   echo "Installing boot loader"
@@ -70,15 +79,16 @@ do_install() {
 }
 
 do_install_grub(){
-
+    
+    zfs set mountpoint=/ rpool/ROOT/hope
     zfs mount rpool/ROOT/hope
     mount --rbind /dev  /mnt/dev
     mount --rbind /proc /mnt/proc
     mount --rbind /sys  /mnt/sys
     chroot /mnt /bin/bash -c "rm /etc/fstab" 
-    chroot /mnt /bin/bash -c "cat > /etc/fstab <<EOF
+    cat > /mnt/etc/fstab <<EOF
     rpool/ROOT/hope / zfs defaults,noatime 0 0
-    EOF"
+EOF
     
     #DISK=$(find /dev/disk/ -type l -ilname "*da" | grep by-id )
     #echo DISK=$DISK >> /mnt/pippo
@@ -87,11 +97,17 @@ do_install_grub(){
     chroot /mnt /bin/bash -c "update-grub"
 
     mount | grep -v zfs | tac | awk '/\/mnt/ {print $3}' | xargs -i{} umount -lf {}
-    
-    zfs umount rpool/ROOT/hope
-    zfs export rpool
+    umount /mnt/sys
+    umount /mnt/dev
+    umount /mnt/proc
 
-    reboot
+    zfs umount rpool/ROOT/hope
+    zpool export rpool
+    
+    echo "FINISH, reboot"
+
+    echo 1 > /proc/sys/kernel/sysrq
+    echo b > /proc/sysrq-trigger
 
 }
 
