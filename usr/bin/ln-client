@@ -61,7 +61,8 @@ do_install() {
   sgdisk     -n9:-8M:0    -t9:BF07 $DISK
   echo "Main partition creation"
   sgdisk     -n1:0:0      -t1:BF01 $DISK
-
+  
+  
   echo "Creation of main zfs pool: rpool"
   zpool create -o ashift=12 \
       -O atime=off -O canmount=off -O compression=lz4 -O normalization=formD \
@@ -84,7 +85,6 @@ do_install_grub(){
     zfs create -o canmount=on -o mountpoint=/boot rpool/ROOT/boot
     zfs set mountpoint=/tmp/boot rpool/ROOT/boot
 
-    zfs mount rpool/ROOT/hope
     zfs mount rpool/ROOT/boot
     
     mv /mnt/boot/* /mnt/tmp/boot/
@@ -92,8 +92,6 @@ do_install_grub(){
     rm -r /mnt/boot
 
     zfs set mountpoint=/boot rpool/ROOT/boot
-    
-    zfs mount rpool/ROOT/boot
 
     mount --rbind /dev  /mnt/dev
     mount --rbind /proc /mnt/proc
