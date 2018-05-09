@@ -73,12 +73,21 @@ do_install() {
   zfs create -o canmount=off -o mountpoint=none rpool/ROOT
   echo "Cloning latest snapshot from server"
   #TODO add service
-  ssh lnsrvsend@192.168.122.219 "zfs send LNPZFS/livenet/images/hope@now | bzip2 -c |" bzcat  | zfs recv rpool/ROOT/hope
-  zfs set mountpoint=/ rpool/ROOT/hope
-  zfs set canmount=on rpool/ROOT/hope
+  #ssh lnsrvsend@192.168.122.219 "zfs send LNPZFS/livenet/images/hope@now | bzip2 -c |" bzcat  | zfs recv rpool/ROOT/hope
+  
+  . /root/FROM
+  mkdir -p /tmp/backup
+  mount -t nfs 10.1.22.3:/LNPZFS/livenet/backups/${FROM}/ /tmp/backup
+  cd /tmp/backup
+  echo "Get backup image"
+  zcat ${FROM}.0.gz | zfs recv -F rpool/ROOT/${FROM}
+  
+  zfs set mountpoint=/ rpool/ROOT/${FROM}
+  zfs set canmount=on rpool/ROOT/${FROM}
   echo "Installing boot loader"
   do_install_grub
 }
+
 
 do_install_grub(){
     
@@ -359,8 +368,8 @@ while true; do
 	   exit 0
 	fi
         check_jail
-    	update-alternatives --set lightdm.conf /etc/lightdm/lightdm.conf.nfs.special
-	systemctl restart lightdm
+    #	update-alternatives --set lightdm.conf /etc/lightdm/lightdm.conf.nfs.special
+	#systemctl restart lightdm
 	do_install
     	sleep 5
     	update-alternatives /etc/lightdm/lightdm.conf
