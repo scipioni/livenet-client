@@ -79,10 +79,13 @@ do_install() {
   
   . /root/FROM
   mkdir -p /tmp/backup
-  mount -t nfs 10.1.22.3:/LNPZFS/livenet/backups/${FROM}/ /tmp/backup
+  BACKUPSERVER:=$(echo LIVENET_ROOT | cut -d ":" -f1):/LNPZFS/livenet/backups/${FROM}/
+  mount -t nfs ${BACKUPSERVER} /tmp/backup
+
   cd /tmp/backup
   echo "Get backup image"
-  zcat ${FROM}.0.gz | zfs recv -F rpool/ROOT/${FROM}
+  LAST=$(ls *.gz | tail -n 1)
+  zcat ${LAST} | zfs recv -F rpool/ROOT/${FROM}
   
   zfs set mountpoint=/ rpool/ROOT/${FROM}
   zfs set canmount=on rpool/ROOT/${FROM}
