@@ -46,6 +46,7 @@ eval set -- "$ARGS"
 
 do_install() {
   #  DEVICE=ens3
+  zpool destroy rpool
   # FIND FIRST DISK FOR ROOT
   DISK=$(find /dev/disk/ -type l -ilname "*da" | grep by-id )
   #CLEAN DISK
@@ -101,7 +102,7 @@ do_install_grub(){
 
   chroot /mnt /bin/bash -c "update-grub"  mount | grep -v zfs | tac | awk '/\/mnt/ {print $3}' | xargs -i{} umount -lf {}
 
-  zfs set mountpoint=/ rpool/ROOT/${FROM}
+  #zfs set mountpoint=/ rpool/ROOT/${FROM}
   zfs set canmount=on rpool/ROOT/${FROM}
 
   zpool export rpool
