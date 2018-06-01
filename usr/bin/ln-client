@@ -45,8 +45,10 @@ ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGN
 eval set -- "$ARGS"
 
 do_install() {
-  #  DEVICE=ens3
-  zpool destroy rpool
+  DEVICE=ens3
+  start_time=$(date +%s)
+
+ # zpool destroy rpool
   # FIND FIRST DISK FOR ROOT
   DISK=$(find /dev/disk/ -type l -ilname "*da" | grep by-id )
   #CLEAN DISK
@@ -78,15 +80,21 @@ do_install() {
   
   . /root/FROM
   mkdir -p /tmp/backup
-  BACKUPSERVER=$(echo ${LIVENET_ROOT} | cut -d ":" -f1):/LNPZFS/livenet/backups/${FROM}/
+  BACKUPSERVER=$(echo ${LIVENET_ROOT%images*})backups/
+
   mount -t nfs ${BACKUPSERVER} /tmp/backup
 
-  cd /tmp/backup
+  cd /tmp/backup/${FROM}
   echo "Get backup image"
   LAST=$(ls *.gz | tail -n 1)
   zcat ${LAST} | zfs recv -F rpool/ROOT/${FROM}
   zfs set mountpoint=/ rpool/ROOT/${FROM}
+  zfs create rpool/LOCAL/
+  mkfs.ext4 /dev/rpool/LOCAL
+  sleep 5
   do_install_grub
+    
+
 }
 
 
