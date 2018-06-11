@@ -84,9 +84,7 @@ do_install() {
 
   mount -t nfs ${BACKUPSERVER} /tmp/backup
 
-
-
-  cd /tmp/backup
+  cd /tmp/backup/${FROM}
   echo "Get backup image"
   LAST=$(ls *.gz | tail -n 1)
   pigz -dc ${LAST} | zfs recv -F rpool/ROOT/${FROM}
