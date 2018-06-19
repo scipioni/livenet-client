@@ -87,7 +87,7 @@ do_install() {
   cd /tmp/backup/${FROM}
   echo "Get backup image"
   LAST=$(ls *.gz | tail -n 1)
-  pigz -dc ${LAST} | zfs recv -F rpool/ROOT/${FROM}
+  zcat ${LAST} | zfs recv -F rpool/ROOT/${FROM}
   zfs set mountpoint=/ rpool/ROOT/${FROM}
   zfs create -V 1gb rpool/LOCAL
   sleep 5
@@ -95,6 +95,7 @@ do_install() {
   # sleep 5  
   #mkdir /LOCAL
   zfs create -o mountpoint=/boot rpool/boot 
+
   finish_time=$(date +%s)
   echo "Time elapsed until cloning: $(( $((finish_time - start_time)) /60 )) min." 
   do_install_grub
@@ -104,21 +105,27 @@ do_install() {
 
 
 do_install_grub(){  
+  
+  echo "create boot volume and copy all files"
+  cp -r /boot/  /mnt/boot/
+  zfs set canmount=on rpool/ROOT/${FROM}
+  echo "delete old /boot"
+  rm -r /boot/
+
   mount --rbind /dev  /mnt/dev
   mount --rbind /proc /mnt/proc
   mount --rbind /sys  /mnt/sys
+  
   echo "Installing boot loader"
 
   chroot /mnt /bin/bash -c "grub-install $(find /dev/disk/ -type l -ilname "*da" | grep by-id )"
+  echo "update grub menu"
 
   chroot /mnt /bin/bash -c "update-grub"  
   
-  cp -r /boot/  /mnt/boot/
-
   mount | grep -v zfs | tac | awk '/\/mnt/ {print $3}' | xargs -i{} umount -lf {}
 
   #zfs set mountpoint=/ rpool/ROOT/${FROM}
-  zfs set canmount=on rpool/ROOT/${FROM}
 
   zpool export rpool
 
