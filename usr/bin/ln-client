@@ -53,7 +53,7 @@ do_install() {
   #DISK=$(find /dev/disk/ -type l -ilname "*da" | grep by-id )
   #CLEAN DISK
   DISK=/dev/sda 
-  [ -b $DISK ] || /dev/vda 
+  [ -b $DISK ] || DISK=/dev/vda 
   if [ ! -b $DISK ]; then
     echo "NO vda o sda found"
     exit 1
@@ -101,7 +101,7 @@ do_install() {
   mkfs.ext4 /dev/zvol/rpool/LOCAL
   # sleep 5  
   #mkdir /LOCAL
-  zfs create -o mountpoint=/boot  rpool/boot 
+  zfs create -o mountpoint=/boot  rpool/boot ||
 
   finish_time=$(date +%s)
   echo "Time elapsed until cloning: $(( $((finish_time - start_time)) /60 )) min." 
@@ -124,8 +124,14 @@ do_install_grub(){
   mount --rbind /sys  /mnt/sys
   
   echo "Installing boot loader"
+  DISK=/dev/sda 
+  [ -b $DISK ] || /dev/vda 
+  if [ ! -b $DISK ]; then
+    echo "NO vda o sda found"
+    exit 1
+  fi
 
-  chroot /mnt /bin/bash -c "grub-install $(find /dev/disk/ -type l -ilname "*da" | grep by-id )"
+  chroot /mnt /bin/bash -c "grub-install $DISK"
   echo "update grub menu"
 
   chroot /mnt /bin/bash -c "update-grub"  
