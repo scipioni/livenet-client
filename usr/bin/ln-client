@@ -94,7 +94,7 @@ do_install() {
   mkfs.ext4 /dev/zvol/rpool/LOCAL
   # sleep 5  
   #mkdir /LOCAL
-  zfs create -o mountpoint=/boot rpool/boot 
+  zfs create -o mountpoint=/boot  rpool/boot 
 
   finish_time=$(date +%s)
   echo "Time elapsed until cloning: $(( $((finish_time - start_time)) /60 )) min." 
@@ -110,7 +110,7 @@ do_install_grub(){
   cp -r /boot/  /mnt/boot/
   zfs set canmount=on rpool/ROOT/${FROM}
   echo "delete old /boot"
-  rm -r /boot/
+  #rm -r /boot/
 
   mount --rbind /dev  /mnt/dev
   mount --rbind /proc /mnt/proc
@@ -130,9 +130,10 @@ do_install_grub(){
   zpool export rpool
 
   echo "FINISH, reboot"
-  #systemctl --force --force reboot
-  echo 1 > /proc/sys/kernel/sysrq
-  echo b > /proc/sysrq-trigger
+  #??????????????
+  systemctl --force --force reboot
+  #echo 1 > /proc/sys/kernel/sysrq
+  #echo b > /proc/sysrq-trigger
 
 }
 
