@@ -50,8 +50,15 @@ do_install() {
 
  # zpool destroy rpool
   # FIND FIRST DISK FOR ROOT
-  DISK=$(find /dev/disk/ -type l -ilname "*da" | grep by-id )
+  #DISK=$(find /dev/disk/ -type l -ilname "*da" | grep by-id )
   #CLEAN DISK
+  DISK=/dev/sda 
+  [ -b $DISK ] || /dev/vda 
+  if [ ! -b $DISK ]; then
+    echo "NO vda o sda found"
+    exit 1
+  fi
+
   echo "Deleting all existing partitions"
   sgdisk --clear -g $DISK
   echo "Deleting all existing partitions"
@@ -72,7 +79,7 @@ do_install() {
   zpool create -o ashift=12 \
       -O atime=off -O canmount=off -O compression=lz4 -O normalization=formD \
       -O mountpoint=/ -R /mnt -f \
-      rpool ${DISK}-part1
+      rpool ${DISK}1
   
   echo "Creation of volume: rpool/ROOT"
   zfs create -o canmount=off -o mountpoint=none rpool/ROOT
