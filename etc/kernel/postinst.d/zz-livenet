@@ -16,7 +16,7 @@ TMPDIR=/var/cache/livenet/tmp-initramfs-$KERNEL
 
 mkdir -p ${TMPDIR}
 rm -fR ${TMPDIR}/*
-cd ${TMPDIR} && zcat ${INITRD} | cpio -i
+cd ${TMPDIR} && unmkinitramfs ${INITRD}
 
 # this hack free 400Kb in zipped initrd image
 #rm bin/sh
