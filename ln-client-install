@@ -1,5 +1,5 @@
 #!/bin/bash
-cd /tmp/livenet-client
+cd /usr/share/livenet-client
 git checkout bionic
 git pull
 rsync -avb etc/ /etc/
@@ -7,4 +7,4 @@ rsync -avb usr/ /usr/
 rsync -avb debian /
 rsync -avb README.md /
 cd /
-ln-mng --kernel
+
