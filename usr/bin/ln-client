@@ -125,7 +125,7 @@ do_install_grub(){
   
   echo "Installing boot loader"
   DISK=/dev/sda 
-  [ -b $DISK ] || /dev/vda 
+  [ -b $DISK ] || DISK=/dev/vda 
   if [ ! -b $DISK ]; then
     echo "NO vda o sda found"
     exit 1
