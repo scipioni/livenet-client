@@ -73,8 +73,8 @@ do_install() {
   sgdisk     -n1:0:0      -t1:BF01 $DISK
   
   
-  echo "aspetta un momento"
-  sleep 10
+  echo "waiting... "
+  sleep 5
   echo "Creation of main zfs pool: rpool"
   zpool create -o ashift=12 \
       -O atime=off -O canmount=off -O compression=lz4 -O normalization=formD \
