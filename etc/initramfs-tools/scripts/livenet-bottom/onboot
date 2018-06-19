@@ -25,8 +25,8 @@ log_begin_msg "$DESCRIPTION"
     
 echo "LIVENET_ROOT=${LIVENET_ROOT}" >> /tmp/net-${DEVICE}.conf # utilized by ln-client --install
 for x in /run/net-*.conf /tmp/net-*.conf ; do
-    . ${x}
-    cat ${x} >> ${rootmnt}/${STATETMP}/net-${DEVICE}.conf # utilized by ln-client --sync-state
+    [ -e "${x}" ] && . ${x}
+    #cat ${x} >> ${rootmnt}/${STATETMP}/net-${DEVICE}.conf # utilized by ln-client --sync-state
 done
 
 mount -n -o bind /sys /root/sys

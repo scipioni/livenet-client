@@ -41,7 +41,7 @@ set -e
 
 # tastiera italiana in initram
 # attivata da do_debug_shell (loadkeys /etc/boottime.kmap.gz)
-#cp -au /etc/console-setup/cached_UTF-8_del.kmap.gz ${DESTDIR}/etc/boottime.kmap.gz
+#cp -au /etc/console-setup/cached.kmap.gz ${DESTDIR}/etc/boottime.kmap.gz
 
 # nfs4
 copy_exec /usr/sbin/rpc.idmapd /bin
