@@ -73,7 +73,7 @@ echo '-------------'
 echo 'ipconfig -c dhcp -i "LIVENET" "${DEVICE}"'
 echo '-------------'
 
-do_debug_shell
+#do_debug_shell
 
 
 log_end_msg

@@ -42,13 +42,14 @@ SHORTOPTS="hv"
 LONGOPTS="help,version,install,install-with-gui,grub-update,boot:,force,standalone,sync-state,reset-lightdm,session-wait,user:,scan:,shutdown,kiosk,kiosk-loop,monitors-clone,vboxsetup"
 
 ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@" )
+
 eval set -- "$ARGS"
 
 do_install() {
   DEVICE=ens3
   start_time=$(date +%s)
 
- # zpool destroy rpool
+ #zpool destroy rpool
   # FIND FIRST DISK FOR ROOT
   #DISK=$(find /dev/disk/ -type l -ilname "*da" | grep by-id )
   #CLEAN DISK
@@ -96,12 +97,12 @@ do_install() {
   LAST=$(ls *.gz | tail -n 1)
   zcat ${LAST} | zfs recv -F rpool/ROOT/${FROM}
   zfs set mountpoint=/ rpool/ROOT/${FROM}
-  zfs create -V 1gb rpool/LOCAL
-  sleep 5
-  mkfs.ext4 /dev/zvol/rpool/LOCAL
+ # zfs create -V 1gb rpool/LOCAL
+  #sleep 5
+  #mkfs.ext4 /dev/zvol/rpool/LOCAL
   # sleep 5  
   #mkdir /LOCAL
-  zfs create -o mountpoint=/boot  rpool/boot ||
+  zfs create -o mountpoint=/media/boot  rpool/boot ||
 
   finish_time=$(date +%s)
   echo "Time elapsed until cloning: $(( $((finish_time - start_time)) /60 )) min." 
@@ -114,7 +115,7 @@ do_install() {
 do_install_grub(){  
   
   echo "create boot volume and copy all files"
-  cp -r /boot/  /mnt/boot/
+  cp -r /boot/*  /media/boot/
   zfs set canmount=on rpool/ROOT/${FROM}
   echo "delete old /boot"
   #rm -r /boot/

@@ -60,10 +60,10 @@ mountroot
 #    exit 1
 #fi
 
-for x in /run/net-"${DEVICE}".conf /run/net-*.conf /tmp/net-*.conf; do
-    ROOTMOUNTED=local
-    [ -e "${x}" ] && echo "ROOTMOUNTED=${ROOTMOUNTED}" >> ${x}
-done
+#for x in /run/net-"${DEVICE}".conf /run/net-*.conf /tmp/net-*.conf; do
+#    ROOTMOUNTED=local
+#    [ -e "${x}" ] && echo "ROOTMOUNTED=${ROOTMOUNTED}" >> ${x}
+#done
 
 log_end_msg
 
