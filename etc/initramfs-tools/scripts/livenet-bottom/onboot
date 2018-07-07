@@ -29,8 +29,8 @@ echo "LIVENET_ROOT=${LIVENET_ROOT}" >> /tmp/net-${DEVICE}.conf # utilized by ln-
 #    #cat ${x} >> ${rootmnt}/${STATETMP}/net-${DEVICE}.conf # utilized by ln-client --sync-state
 #done
 echo "tutto avverrà qui"
-zfs list
-sleep 10
+#zfs list
+#sleep 10
 #ottieni l'ultimo 
 
 

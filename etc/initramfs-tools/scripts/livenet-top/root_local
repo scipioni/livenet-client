@@ -46,7 +46,8 @@ fi
 
 #Continue with boot
 
-
+do_debug_shell
+. /scripts/get_updates
 
 . /scripts/zfs
 mountroot
