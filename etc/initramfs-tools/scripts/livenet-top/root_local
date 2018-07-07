@@ -35,6 +35,19 @@ fi
 #eval $(fstype < ${ROOT}) # Get the root filesystem type
 #modprobe ${FSTYPE}
 
+
+
+#Check if there are some updates for me
+
+#run get_updates
+
+#Check if all is ok
+#TODO
+
+#Continue with boot
+
+
+
 . /scripts/zfs
 mountroot
 

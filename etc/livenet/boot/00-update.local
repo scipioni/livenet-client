@@ -1,8 +1,8 @@
 # ##################################################
 # # update local root filesystem from LIVENET_ROOT
 # ##################################################
-echo "posso fare qualcosa"?
-do_debug_shell
+#echo "posso fare qualcosa"?
+#do_debug_shell
 # # if null root filesystem is '/'
 # DEST_ROOT=$1
 

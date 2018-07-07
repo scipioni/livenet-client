@@ -31,7 +31,11 @@ echo "LIVENET_ROOT=${LIVENET_ROOT}" >> /tmp/net-${DEVICE}.conf # utilized by ln-
 echo "tutto avverrà qui"
 zfs list
 sleep 10
+#ottieni l'ultimo 
 
+
+
+#####
 
 mount -n -o bind /sys /root/sys
 mount -n -o bind /proc /root/proc
