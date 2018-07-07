@@ -85,10 +85,11 @@ do
 done
 
 cd /
+
 umount /mnt
-if [[ $(mount | grep /mnt/client3 | wc -l) -gt 0 ]]; then
+if [[ $(mount | grep /mnt/ | wc -l) -gt 0 ]]; then
 #if there are some promblems with umount, bye bye
-    umount -lf /mnt/client3
+    umount -lf /mnt/
 fi
 
 zfs set mountpoint=/mnt ${ROOT_VOLUME}

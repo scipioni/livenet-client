@@ -1,5 +1,4 @@
 /
-/home
 /dev
 /initrd.img
 /var
@@ -15,7 +14,7 @@
 /vmlinuz
 /.git
 /lib64
-/etc
+
 /media
 /proc
 /run
