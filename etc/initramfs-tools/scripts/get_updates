@@ -36,7 +36,7 @@ LAST_SNAP_TS=$(echo $LAST_SNAP | cut -d '@' -f 2)
 for x in /run/net-"${DEVICE}".conf /run/net-*.conf /tmp/net-*conf; do
     if [ -e $x ]; then
         . ${x}
-        export $ROOTSERVER
+        export $ROOTSERVER ||
     fi
 done 
 
@@ -110,15 +110,15 @@ chroot /mnt /bin/bash -c "grub-install $DISK"
 chroot /mnt /bin/bash -c "update-grub" 
 
 
-umount /proc /mnt/proc
+umount /mnt/proc
 umount /mnt/sys
 umount /mnt/dev/pts
 umount /mnt/dev
 umount /mnt/
 
-zfs set mountpoint=/ ${ROOT_VOLUME}
+#mount | grep -v zfs | tac | awk '/\/mnt/ {print $3}' | xargs -i{} umount -lf {}
 
-mount | grep -v zfs | tac | awk '/\/mnt/ {print $3}' | xargs -i{} umount -lf {}
+zfs set mountpoint=/ ${ROOT_VOLUME}
 
 zpool export rpool
 
