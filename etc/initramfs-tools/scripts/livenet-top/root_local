@@ -81,7 +81,7 @@ N_UPDATES_DONE=0
 ZERO=0
 NEED_ROLLBACK=1
 start_time_all=$(date +%s)
-for UPDATE_FILE in `ls /mnt/$IMAGE_NAME/*.gz`
+for UPDATE_FILE in `ls /mnt/$IMAGE_NAME/*.gz | sort`
 do
       ##old  NUMBERVALUE=$(echo ${UPDATE_FILE} | cut -d '.' -f 1 | rev | cut -d '/' -f 1 | rev)
       NUMBERVALUE=$(echo ${UPDATE_FILE} | cut -d '.' -f 1 )
