@@ -89,12 +89,12 @@ do
 
         let "N_UPDATES += 1"
         if [ ${NUMBERVALUE} -gt ${LAST_SNAP_TS} ]; then
-            #ROLLBACK to latest snapshot only first time
-            #if [ ${NEED_ROOLBACK} -gt 0 ]; then
-            #    echo "Befare of all, rollback the volume to the latest snapshot only one time"
-            #    zfs rollback ${LAST_SNAP}
-            #    NEED_ROLLBACK=0
-            #fi
+            ROLLBACK to latest snapshot only first time
+            if [ ${NEED_ROOLBACK} -gt 0 ]; then
+                echo "Befare of all, rollback the volume to the latest snapshot only one time"
+                zfs rollback ${LAST_SNAP}
+                NEED_ROLLBACK=0
+            fi
 
             start_time=$(date +%s)
             echo ${UPDATE_FILE}  "is more recent than " $LAST_SNAP ", now we can install it..."
