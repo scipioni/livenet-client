@@ -92,6 +92,7 @@ do
             ROLLBACK to latest snapshot only first time
             if [ ${NEED_ROOLBACK} -gt 0 ]; then
                 echo "Befare of all, rollback the volume to the latest snapshot only one time"
+                echo "Rollback to ${LAST_SNAP}"
                 zfs rollback ${LAST_SNAP}
                 NEED_ROLLBACK=0
             fi
