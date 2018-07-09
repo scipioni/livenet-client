@@ -85,6 +85,9 @@ do_install() {
   echo "Creation of volume: rpool/ROOT"
   zfs create -o canmount=off -o mountpoint=none rpool/ROOT
   echo "Cloning latest backup from server"
+  #Set mountpoint of rpool to "none"
+  #si sposto nell'installazione
+  zfs set mountpoint=none rpool
   
   . /root/FROM
   mkdir -p /tmp/backup
