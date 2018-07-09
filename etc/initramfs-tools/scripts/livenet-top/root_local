@@ -179,15 +179,13 @@ zpool export rpool
 
 #Continue with boot
 
+do_debug_shell
 
 
 . /scripts/zfs
-do_debug_shell
 #vedere come sono qui
 
 #eseguio get_updates copiando il codice
-. /scripts/get_updates
-
 mountroot
 
 # TODO, controllare che mountroot precedente abbia fatto il suo lavoro
