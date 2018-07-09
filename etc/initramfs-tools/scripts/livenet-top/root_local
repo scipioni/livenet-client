@@ -90,7 +90,7 @@ do
         let "N_UPDATES += 1"
         if [ ${NUMBERVALUE} -gt ${LAST_SNAP_TS} ]; then
            # ROLLBACK to latest snapshot only first time
-            if [ ${NEED_ROOLBACK} -gt ${Zero} ]; then
+            if [ ${NEED_ROOLBACK} -gt ${ZERO} ]; then
                 echo "Befare of all, rollback the volume to the latest snapshot only one time"
                 echo "Rollback to ${LAST_SNAP}"
                 zfs rollback ${LAST_SNAP}
