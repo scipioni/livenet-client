@@ -78,7 +78,7 @@ mount.nfs $ROOTSERVER:/LNPZFS/livenet/increases /mnt/
 #Install all updates
 N_UPDATES=0
 N_UPDATES_DONE=0
-
+ZERO=0
 NEED_ROLLBACK=1
 start_time_all=$(date +%s)
 for UPDATE_FILE in `ls /mnt/$IMAGE_NAME/*.gz`
@@ -89,8 +89,8 @@ do
 
         let "N_UPDATES += 1"
         if [ ${NUMBERVALUE} -gt ${LAST_SNAP_TS} ]; then
-            ROLLBACK to latest snapshot only first time
-            if [ ${NEED_ROOLBACK} -gt 0 ]; then
+           # ROLLBACK to latest snapshot only first time
+            if [ ${NEED_ROOLBACK} -gt ${Zero} ]; then
                 echo "Befare of all, rollback the volume to the latest snapshot only one time"
                 echo "Rollback to ${LAST_SNAP}"
                 zfs rollback ${LAST_SNAP}
