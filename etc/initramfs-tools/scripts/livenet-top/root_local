@@ -90,11 +90,11 @@ do
         let "N_UPDATES += 1"
         if [ ${NUMBERVALUE} -gt ${LAST_SNAP_TS} ]; then
             #ROLLBACK to latest snapshot only first time
-            if [ ${NEED_ROOLBACK} -gt 0 ]; then
-                echo "Befare of all, rollback the volume to the latest snapshot only one time"
-                zfs rollback ${LAST_SNAP}
-                NEED_ROLLBACK=0
-            fi
+            #if [ ${NEED_ROOLBACK} -gt 0 ]; then
+            #    echo "Befare of all, rollback the volume to the latest snapshot only one time"
+            #    zfs rollback ${LAST_SNAP}
+            #    NEED_ROLLBACK=0
+            #fi
 
             start_time=$(date +%s)
             echo ${UPDATE_FILE}  "is more recent than " $LAST_SNAP ", now we can install it..."
@@ -102,11 +102,7 @@ do
            # ( zcat ${UPDATE_FILE} | zfs receive -F ${ROOT_VOLUME} ) &
             ## sleep 2 && kill -9 1
             #wait
-            #sposto qui install grub e update grub
-            chroot /mnt /bin/bash -c "grub-install $DISK"
-            sleep 1
-            chroot /mnt /bin/bash -c "update-grub" 
-            sleep 1
+           
             #presuppongo che se zfs receive fallisce vale l'ultimo
             end_time=$(date +%s)
             sleep 1
@@ -137,7 +133,7 @@ zfs mount ${ROOT_VOLUME}
 mount --rbind /dev /mnt/dev
 mount --rbind /proc /mnt/proc
 mount --rbind /sys /mnt/sys
-
+ 
 
 DISK=/dev/sda 
   [ -b $DISK ] || DISK=/dev/vda 
@@ -148,6 +144,10 @@ DISK=/dev/sda
 
 #install grub
 #moved
+chroot /mnt /bin/bash -c "grub-install $DISK"
+sleep 1
+chroot /mnt /bin/bash -c "update-grub" 
+sleep 1
 
 #umount
 umount /mnt/proc
