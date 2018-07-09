@@ -96,9 +96,16 @@ do
         if [ ${NUMBERVALUE} -gt ${LAST_SNAP_TS} ]; then
             start_time=$(date +%s)
             echo ${UPDATE_FILE}  "is more recent than " $LAST_SNAP ", now we can install it..."
-            zcat ${UPDATE_FILE} | zfs receive -F ${ROOT_VOLUME}
+           # zcat ${UPDATE_FILE} | zfs receive -F ${ROOT_VOLUME}
+            ( zcat ${UPDATE_FILE} | zfs receive -F ${ROOT_VOLUME} ) &
+            # sleep 2 && kill -9 1
+            wait
             #sposto qui install grub e update grub
-            #presupposto se zfs receive fallisce vale l'ultimo
+            chroot /mnt /bin/bash -c "grub-install $DISK"
+            sleep 1
+            chroot /mnt /bin/bash -c "update-grub" 
+            sleep 1
+            #presuppongo che se zfs receive fallisce vale l'ultimo
             end_time=$(date +%s)
             sleep 1
             LAST_SNAP=$(zfs list -t snapshot -o name -s creation -r ${ROOT_VOLUME} | tail -1)
@@ -135,23 +142,23 @@ DISK=/dev/sda
     exit 1
   fi
 
-chroot /mnt /bin/bash -c "grub-install $DISK"
-chroot /mnt /bin/bash -c "update-grub" 
+#install grub
+#moved
 
-
+#umount
 umount /mnt/proc
 umount /mnt/sys
 umount /mnt/dev/pts
 umount /mnt/dev
 umount /mnt/
 
-mount | grep -v zfs | tac | awk '/\/mnt/ {print $3}' | xargs -i{} umount -lf {}
+#mount | grep -v zfs | tac | awk '/\/mnt/ {print $3}' | xargs -i{} umount -lf {}
 
 #
 zfs set mountpoint=/ ${ROOT_VOLUME}
-
+sleep 1
 zpool export rpool
-
+sleep 1
 
 
 
