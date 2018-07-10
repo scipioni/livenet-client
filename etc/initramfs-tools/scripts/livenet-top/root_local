@@ -191,15 +191,17 @@ sleep 1
 
 #Continue with boot
 
-do_debug_shell
+#do_debug_shell
 
+for x in /run/net-"${DEVICE}".conf /run/net-*.conf /tmp/net-*.conf; do
+    ROOTMOUNTED=local
+
+   [ -e "${x}" ] && echo "ROOTMOUNTED=${ROOTMOUNTED}" >> ${x}
+done
 
 . /scripts/zfs
-#vedere come sono qui
 
-#eseguio get_updates copiando il codice
 mountroot
-
 # TODO, controllare che mountroot precedente abbia fatto il suo lavoro
 #seconds=10 # wait 10 seconds to have disk module (important for scsi driver)
 #while [ 1 ]; do
@@ -222,10 +224,8 @@ mountroot
 #    exit 1
 #fi
 
-#for x in /run/net-"${DEVICE}".conf /run/net-*.conf /tmp/net-*.conf; do
-#    ROOTMOUNTED=local
-#    [ -e "${x}" ] && echo "ROOTMOUNTED=${ROOTMOUNTED}" >> ${x}
-#done
+
+
 
 log_end_msg
 

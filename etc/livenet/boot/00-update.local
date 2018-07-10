@@ -1,3 +1,25 @@
+###########################################################
+## update local boot partition after system kernel upgrade
+###########################################################
+
+# TODO check if system need kernel update
+
+mount -L BOOT /mnt
+DIFF_NUM=`diff -rq /boot /mnt | wc -l`
+if [ "$DIFF_NUM" -gt "0" ] ; then
+  
+    update-grub
+    cp -r /boot/* /mnt
+    sleep 1
+    umount -lf /mnt
+    mount -L BOOT /boot
+    echo "System last update $(date)" >> /var/lastupdate
+else 
+    umount -lf /mnt
+fi
+
+
+
 # ##################################################
 # # update local root filesystem from LIVENET_ROOT
 # ##################################################
