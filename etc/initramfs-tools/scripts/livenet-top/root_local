@@ -91,7 +91,7 @@ do
         if [ ${NUMBERVALUE} -gt ${LAST_SNAP_TS} ]; then
            # ROLLBACK to latest snapshot only first time
             if [ ${NEED_ROOLBACK} -gt ${ZERO} ]; then
-                echo "Befare of all, rollback the volume to the latest snapshot only one time"
+                echo "Before of all, rollback the volume to the latest snapshot only one time"
                 echo "Rollback to ${LAST_SNAP}"
                 zfs rollback ${LAST_SNAP}
                 NEED_ROLLBACK=0
@@ -145,9 +145,9 @@ DISK=/dev/sda
 
 #install grub
 #moved
-chroot /mnt /bin/bash -c "grub-install $DISK"
+#chroot /mnt /bin/bash -c "grub-install $DISK"
 sleep 1
-chroot /mnt /bin/bash -c "update-grub" 
+#chroot /mnt /bin/bash -c "update-grub" 
 sleep 1
 
 #umount
