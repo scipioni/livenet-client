@@ -166,10 +166,6 @@ zpool export rpool
 sleep 1
 
 
-
-
-
-
 # traslate UUID into file block
 #echo "$ROOT" | grep -q "UUID="
 #if [ $? = 0 ]; then
@@ -202,6 +198,7 @@ done
 . /scripts/zfs
 
 mountroot
+
 # TODO, controllare che mountroot precedente abbia fatto il suo lavoro
 #seconds=10 # wait 10 seconds to have disk module (important for scsi driver)
 #while [ 1 ]; do

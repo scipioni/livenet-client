@@ -46,7 +46,7 @@ umount /root/sys
 umount /root/proc
 
 # in local mount mount ro disk
-[ "${ROOTMOUNTED}" = "local" ] && mount -o remount,rw ${rootmnt}
+#[ "${ROOTMOUNTED}" = "local" ] && mount -o remount,rw ${rootmnt}
 
 log_end_msg
 
