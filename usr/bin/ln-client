@@ -59,7 +59,7 @@ do_install() {
     echo "NO vda o sda found"
     exit 1
   fi
-  export ${DISK}
+  export DISK
   echo "Deleting all existing partitions"
   sgdisk --clear -g $DISK
   
@@ -77,7 +77,7 @@ do_install() {
   echo "Main partition creation"
   sgdisk     -n1:0:0      -t1:BF01 $DISK
   
-  mkfs.ext4 ${DISK}4
+  yes |  mkfs.ext4 ${DISK}4
   e2label ${DISK}4 BOOT 
 
   echo "waiting... "
@@ -116,7 +116,7 @@ do_install() {
   finish_time=$(date +%s)
   echo "Time elapsed until cloning: $(( $((finish_time - start_time)) /60 )) min." 
   do_install_grub
-    
+ 
 
 }
 
@@ -126,7 +126,9 @@ do_install_grub(){
   echo "create boot volume and copy all files"
   
   zfs set canmount=on rpool/ROOT/${FROM}
-  zfs mount rpool/ROOT/${FROM}
+  
+  
+  #zfs mount rpool/ROOT/${FROM}
   #echo "delete old /boot"
   #rm -r /boot/
 
@@ -143,27 +145,33 @@ do_install_grub(){
   fi
   
   mkdir /tempmount
-  mount -L BOOT /tempmount
-  cp -r /boot/*  /tempmount/
-  sleep 1
-  umount -lf /tempmount
+  mount -L BOOT /mnt/boot/
+  rsync -a /boot/  /mnt/boot/
+  
+  #umount -lf /tempmount
 
-  chroot /mnt /bin/bash -c "mount -a"
-  chroot /mnt /bin/bash -c "mount -a && grub-install ${DISK}"
+  #chroot /mnt /bin/bash -c "mount -a"
+  chroot /mnt /bin/bash -c "grub-install ${DISK}"
   echo "update grub menu"
 
-  chroot /mnt /bin/bash -c "mount -a && update-grub"  
+  chroot /mnt /bin/bash -c "update-grub"  
   
+  umount -lf /mnt/boot
+  umount /mnt/dev/pts
+  umount /mnt/dev
+  umount /mnt/proc
+  umount /mnt/sys
+
   mount | grep -v zfs | tac | awk '/\/mnt/ {print $3}' | xargs -i{} umount -lf {}
   
   zfs umount rpool/ROOT/${FROM}
-  #zfs set mountpoint=/ rpool/ROOT/${FROM}
+  zfs set mountpoint=/ rpool/ROOT/${FROM}
 
   zpool export rpool
 
   echo "FINISH, reboot"
   #??????????????
-  systemctl --force --force reboot
+#  systemctl --force --force reboot
   #echo 1 > /proc/sys/kernel/sysrq
   #echo b > /proc/sysrq-trigger
 
@@ -383,13 +391,28 @@ EOF
 
 
 do_grub_update() {
-    if [ /etc/default/grub -nt /boot/grub/grub.cfg ] \
-        || [ /etc/grub.d/01_security -nt /boot/grub/grub.cfg ] \
-        || [ /boot/initrd -nt /boot/grub/grub.cfg ] \
-        || [ /etc/grub.d/30_os-prober -nt /boot/grub/grub.cfg ]; then
-        echo "Updating grub"
-        /usr/sbin/update-grub
-    fi
+
+echo "Updating grub"
+         
+#        mount -L BOOT /boot
+        mount --bind / /mnt
+        DIFF_NUM=$(diff -rq /boot /mnt | wc -l)
+        if [ "${DIFF_NUM}" -gt "0" ] ; then
+            rsync -a /mnt/boot/ /boot/
+            umount /mnt
+            /usr/sbin/update-grub
+
+            #update-grub
+            #mount -L BOOT /boot
+           echo "System last update $(date)" >> /var/lastupdate
+        else 
+            umount -lf /mnt
+        fi
+
+
+
+
+
 }
 
 

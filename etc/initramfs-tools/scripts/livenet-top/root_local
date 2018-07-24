@@ -63,8 +63,10 @@ done
 #make mount point in to initramfs 
 mkdir /mnt
 
+
 #mount updates
-mount.nfs $ROOTSERVER:/LNPZFS/livenet/increases /mnt/
+do_log " mount remote path for increases"  
+mount.nfs -o timeo=5 ${LIVENET_ROOT_IP}:/livenet/increases /mnt/
 
 #check how many update need to install
 #N_UPDATES=0
