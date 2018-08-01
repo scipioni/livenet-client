@@ -15,7 +15,6 @@ prereqs)
        ;;
 esac
 echo $DESCRIPTION
-
 . /scripts/functions
 . /scripts/functions-livenet
 log_begin_msg "$DESCRIPTION"
@@ -67,60 +66,56 @@ mkdir /mnt
 #mount updates
 do_log " mount remote path for increases"  
 mount.nfs -o timeo=5 ${LIVENET_ROOT_IP}:/livenet/increases /mnt/
+if [ $? = 0 ]; then
+	#Install all updates
+	N_UPDATES=0
+	N_UPDATES_DONE=0
+	ZERO=0
+	NEED_ROLLBACK=1
+	start_time_all=$(date +%s)
+	for UPDATE_FILE in `ls /mnt/$IMAGE_NAME/*.gz | sort`
+	do
+		##old  NUMBERVALUE=$(echo ${UPDATE_FILE} | cut -d '.' -f 1 | rev | cut -d '/' -f 1 | rev)
+		NUMBERVALUE=$(echo ${UPDATE_FILE} | cut -d '.' -f 1 )
+		NUMBERVALUE=${NUMBERVALUE##*/}
 
-#check how many update need to install
-#N_UPDATES=0
-#for x in `ls /mnt/$IMAGE_NAME/*.gz`
-#do
-#    let "N_UPDATES += 1"
-#done
-#echo $N_UPDATES
+		let "N_UPDATES += 1"
+		if [ ${NUMBERVALUE} -gt ${LAST_SNAP_TS} ]; then
+		   # ROLLBACK to latest snapshot only first time
+			if [ ${NEED_ROOLBACK} -gt ${ZERO} ]; then
+			echo "Before of all, rollback the volume to the latest snapshot only one time"
+			echo "Rollback to ${LAST_SNAP}"
+			zfs rollback ${LAST_SNAP}
+			NEED_ROLLBACK=0
+			fi
 
+			start_time=$(date +%s)
+			echo ${UPDATE_FILE}  "is more recent than " $LAST_SNAP ", now we can install it..."
+			zcat ${UPDATE_FILE} | zfs receive -F ${ROOT_VOLUME}
+		   # ( zcat ${UPDATE_FILE} | zfs receive -F ${ROOT_VOLUME} ) &
+			## sleep 2 && kill -9 1
+			#wait
+		   
+			#presuppongo che se zfs receive fallisce vale l'ultimo
+			end_time=$(date +%s)
+			sleep 1
+			LAST_SNAP=$(zfs list -t snapshot -o name -s creation -r ${ROOT_VOLUME} | tail -1)
+			LAST_SNAP_TS=$(echo $LAST_SNAP | cut -d '@' -f 2)
+			echo "The system have install ${UPDATE_FILE} on the volume ${ROOT_VOLUME}, the most recent snapshot of the volume is ${LAST_SNAP}"
+			echo "elapsed time: $(( $((end_time - start_time))/60 )) min."
+			let "N_UPDATES_DONE += 1"
+			echo "Install next update"
+			sleep 1
+		fi
+	done
+	end_time_all=$(date +%s)
 
-#Install all updates
-N_UPDATES=0
-N_UPDATES_DONE=0
-ZERO=0
-NEED_ROLLBACK=1
-start_time_all=$(date +%s)
-for UPDATE_FILE in `ls /mnt/$IMAGE_NAME/*.gz | sort`
-do
-      ##old  NUMBERVALUE=$(echo ${UPDATE_FILE} | cut -d '.' -f 1 | rev | cut -d '/' -f 1 | rev)
-      NUMBERVALUE=$(echo ${UPDATE_FILE} | cut -d '.' -f 1 )
-      NUMBERVALUE=${NUMBERVALUE##*/}
+	echo "Your system had ${N_UPDATES} updates to install, your system installed ${N_UPDATES_DONE} in $((end_time_all - start_time_all)) seconds"
+else
+    do_log " cannot mount remote nfs ${LIVENET_ROOT_IP} "
+    sleep 10
+fi
 
-        let "N_UPDATES += 1"
-        if [ ${NUMBERVALUE} -gt ${LAST_SNAP_TS} ]; then
-           # ROLLBACK to latest snapshot only first time
-            if [ ${NEED_ROOLBACK} -gt ${ZERO} ]; then
-                echo "Before of all, rollback the volume to the latest snapshot only one time"
-                echo "Rollback to ${LAST_SNAP}"
-                zfs rollback ${LAST_SNAP}
-                NEED_ROLLBACK=0
-            fi
-
-            start_time=$(date +%s)
-            echo ${UPDATE_FILE}  "is more recent than " $LAST_SNAP ", now we can install it..."
-            zcat ${UPDATE_FILE} | zfs receive -F ${ROOT_VOLUME}
-           # ( zcat ${UPDATE_FILE} | zfs receive -F ${ROOT_VOLUME} ) &
-            ## sleep 2 && kill -9 1
-            #wait
-           
-            #presuppongo che se zfs receive fallisce vale l'ultimo
-            end_time=$(date +%s)
-            sleep 1
-            LAST_SNAP=$(zfs list -t snapshot -o name -s creation -r ${ROOT_VOLUME} | tail -1)
-            LAST_SNAP_TS=$(echo $LAST_SNAP | cut -d '@' -f 2)
-            echo "The system have install ${UPDATE_FILE} on the volume ${ROOT_VOLUME}, the most recent snapshot of the volume is ${LAST_SNAP}"
-            echo "elapsed time: $(( $((end_time - start_time))/60 )) min."
-            let "N_UPDATES_DONE += 1"
-            echo "Install next update"
-            sleep 1
-        fi
-done
-end_time_all=$(date +%s)
-
-echo "Your system had ${N_UPDATES} updates to install, your system installed ${N_UPDATES_DONE} in $((end_time_all - start_time_all)) seconds"
 
 cd /
 

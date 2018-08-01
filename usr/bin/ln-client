@@ -62,6 +62,7 @@ do_install() {
   export DISK
   echo "Deleting all existing partitions"
   sgdisk --clear -g $DISK
+  sync
   
   echo "Set align value, type xenix root"
   sgdisk -a1 -n2:34:2047  -t2:EF02 $DISK
