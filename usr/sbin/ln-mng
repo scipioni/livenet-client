@@ -58,7 +58,7 @@ do_check_alternative() {
             [ -f ${f} ] && mv ${f} ${d}.local.standalone
         fi
         update-alternatives --remove-all ${alternative_name} >/dev/null 2>&1
-	mkdir -p $( dirname ${f} )
+		mkdir -p $( dirname ${f} )
         for instance in ${d}.?*.?* ${d##/livenet}.?*.?*; do
             [ -e ${instance} ] || continue
             update-alternatives --install $f ${alternative_name} ${instance} 30
@@ -160,7 +160,7 @@ do_profiles() {
     do_check_alternative /etc/livenet/local/livenet.conf >/dev/null
     for f in $( egrep -v "^\s*$|^\s*#" ${DIVERSIONS} ); do 
         echo " "$f
-	do_check_alternative ${f} >/dev/null
+		do_check_alternative ${f} > /dev/null
     done
 
     echo 
