@@ -147,6 +147,8 @@ do_install_grub(){
   mkdir /tempmount
   mount -L BOOT /mnt/boot/
   rsync -a /boot/  /mnt/boot/
+
+  echo -n " boot=livenet profile=${PROFILE} " > /mnt/boot/grub.options
   
   #umount -lf /tempmount
 
@@ -179,6 +181,7 @@ do_install_grub(){
 
 do_boot() {
     ROOTMOUNTED=$1
+    set +e
     for module in $(ls /etc/livenet/boot/*.default /etc/livenet/boot/*.${ROOTMOUNTED} | sort); do
         mm=$(basename ${module})
         if [ -x ${module} ]; then
@@ -188,6 +191,7 @@ do_boot() {
             do_log "Skip ${mm}"
         fi
     done
+    set -e
 }
 
 do_standalone() {

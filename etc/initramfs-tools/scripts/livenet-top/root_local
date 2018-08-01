@@ -80,18 +80,18 @@ if [ $? = 0 ]; then
 		NUMBERVALUE=${NUMBERVALUE##*/}
 
 		let "N_UPDATES += 1"
-		if [ ${NUMBERVALUE} -gt ${LAST_SNAP_TS} ]; then
+		if test "${NUMBERVALUE}" ">" "${LAST_SNAP_TS}"; then
 		   # ROLLBACK to latest snapshot only first time
 			if [ ${NEED_ROOLBACK} -gt ${ZERO} ]; then
-			echo "Before of all, rollback the volume to the latest snapshot only one time"
-			echo "Rollback to ${LAST_SNAP}"
-			zfs rollback ${LAST_SNAP}
-			NEED_ROLLBACK=0
+				echo "Before of all, rollback the volume to the latest snapshot only one time"
+				echo "Rollback to ${LAST_SNAP}"
+				zfs rollback ${LAST_SNAP}
+				NEED_ROLLBACK=0
 			fi
 
 			start_time=$(date +%s)
-			echo ${UPDATE_FILE}  "is more recent than " $LAST_SNAP ", now we can install it..."
-			zcat ${UPDATE_FILE} | zfs receive -F ${ROOT_VOLUME}
+			echo "INSTALLING " $(basename ${UPDATE_FILE}) " (> $LAST_SNAP) ..."
+			zcat "${UPDATE_FILE}" | zfs receive -F ${ROOT_VOLUME}
 		   # ( zcat ${UPDATE_FILE} | zfs receive -F ${ROOT_VOLUME} ) &
 			## sleep 2 && kill -9 1
 			#wait
@@ -101,8 +101,8 @@ if [ $? = 0 ]; then
 			sleep 1
 			LAST_SNAP=$(zfs list -t snapshot -o name -s creation -r ${ROOT_VOLUME} | tail -1)
 			LAST_SNAP_TS=$(echo $LAST_SNAP | cut -d '@' -f 2)
-			echo "The system have install ${UPDATE_FILE} on the volume ${ROOT_VOLUME}, the most recent snapshot of the volume is ${LAST_SNAP}"
-			echo "elapsed time: $(( $((end_time - start_time))/60 )) min."
+			#echo "The system have install ${UPDATE_FILE} on the volume ${ROOT_VOLUME}, the most recent snapshot of the volume is ${LAST_SNAP}"
+			echo "  elapsed time: $(( $((end_time - start_time))/60 )) min."
 			let "N_UPDATES_DONE += 1"
 			echo "Install next update"
 			sleep 1
