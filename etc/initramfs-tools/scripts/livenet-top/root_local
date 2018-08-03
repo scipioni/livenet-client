@@ -73,6 +73,7 @@ if [ $? = 0 ]; then
 	ZERO=0
 	NEED_ROLLBACK=1
 	start_time_all=$(date +%s)
+
 	for UPDATE_FILE in `ls /mnt/$IMAGE_NAME/*.gz | sort`
 	do
 		##old  NUMBERVALUE=$(echo ${UPDATE_FILE} | cut -d '.' -f 1 | rev | cut -d '/' -f 1 | rev)
@@ -98,19 +99,20 @@ if [ $? = 0 ]; then
 		   
 			#presuppongo che se zfs receive fallisce vale l'ultimo
 			end_time=$(date +%s)
-			sleep 1
+			#sleep 1
 			LAST_SNAP=$(zfs list -t snapshot -o name -s creation -r ${ROOT_VOLUME} | tail -1)
 			LAST_SNAP_TS=$(echo $LAST_SNAP | cut -d '@' -f 2)
 			#echo "The system have install ${UPDATE_FILE} on the volume ${ROOT_VOLUME}, the most recent snapshot of the volume is ${LAST_SNAP}"
-			echo "  elapsed time: $(( $((end_time - start_time))/60 )) min."
+			#echo "  elapsed time: $(( $((end_time - start_time)) )) sec."
 			let "N_UPDATES_DONE += 1"
 			echo "Install next update"
-			sleep 1
+			#sleep 1
 		fi
 	done
 	end_time_all=$(date +%s)
-
-	echo "Your system had ${N_UPDATES} updates to install, your system installed ${N_UPDATES_DONE} in $((end_time_all - start_time_all)) seconds"
+    echo " "
+	echo "Your system installed ${N_UPDATES_DONE} in $((end_time_all - start_time_all)) seconds"
+    echo " "
 else
     do_log " cannot mount remote nfs ${LIVENET_ROOT_IP} "
     sleep 10
@@ -125,59 +127,44 @@ if [[ $(mount | grep /mnt/ | wc -l) -gt 0 ]]; then
     umount -lf /mnt/
 fi
 
-zfs set mountpoint=/mnt ${ROOT_VOLUME}
+#zfs set mountpoint=/mnt ${ROOT_VOLUME}
 #mount senza alterare
-zfs mount ${ROOT_VOLUME}
-mount --rbind /dev /mnt/dev
-mount --rbind /proc /mnt/proc
-mount --rbind /sys /mnt/sys
+#zfs mount ${ROOT_VOLUME}
+#mount --rbind /dev /mnt/dev
+#mount --rbind /proc /mnt/proc
+#mount --rbind /sys /mnt/sys
  
 
-DISK=/dev/sda 
-  [ -b $DISK ] || DISK=/dev/vda 
-  if [ ! -b $DISK ]; then
-    echo "NO vda o sda found"
-    exit 1
-  fi
+#DISK=/dev/sda 
+#  [ -b $DISK ] || DISK=/dev/vda 
+#  if [ ! -b $DISK ]; then
+#    echo "NO vda o sda found"
+#    exit 1
+#  fi
 
-#install grub
-#moved
-#chroot /mnt /bin/bash -c "grub-install $DISK"
-sleep 1
+##install grub
+##moved
+##chroot /mnt /bin/bash -c "grub-install $DISK"
+#sleep 1
 #chroot /mnt /bin/bash -c "update-grub" 
-sleep 1
+#sleep 1
 
 #umount
-umount /mnt/proc
-umount /mnt/sys
-umount /mnt/dev/pts
-umount /mnt/dev
-umount /mnt/
+#umount /mnt/proc
+#umount /mnt/sys
+#umount /mnt/dev/pts
+#umount /mnt/dev
+#umount /mnt/
 
 #mount | grep -v zfs | tac | awk '/\/mnt/ {print $3}' | xargs -i{} umount -lf {}
 
 #
 zfs set mountpoint=/ ${ROOT_VOLUME}
-sleep 1
+#sleep 1
 zpool export rpool
-sleep 1
+#sleep 1
 
 
-# traslate UUID into file block
-#echo "$ROOT" | grep -q "UUID="
-#if [ $? = 0 ]; then
-#    eval $ROOT # to have UUID=
-#    ROOT=/dev/disk/by-uuid/$UUID
-#fi
-
-#eval $(fstype < ${ROOT}) # Get the root filesystem type
-#modprobe ${FSTYPE}
-
-
-
-#Check if there are some updates for me
-
-#run get_updates
 
 #Check if all is ok
 #TODO
@@ -195,31 +182,6 @@ done
 . /scripts/zfs
 
 mountroot
-
-# TODO, controllare che mountroot precedente abbia fatto il suo lavoro
-#seconds=10 # wait 10 seconds to have disk module (important for scsi driver)
-#while [ 1 ]; do
-#    if [ -e "${ROOT}" ]; then
-#        break
-#    fi
-#    seconds=$((seconds-1))
-#    if [ ${seconds} -lt 1 ]; then
-#        do_log "ERROR: No disk module or no root on disk... install cache or add disk module to initramfs.conf#auto_add_module"
-#        sleep 30 # wait to permit to read message
-#        exit 1
-#    fi
-#    sleep 1
-#done
-
-#mount -o rw -t ${FSTYPE} ${ROOT} ${rootmnt} # rw for update_root, after root partition is remounted ro in livenet-bottom scripts
-#if [ ! $? == 0 ]; then # root mounted, try to update now
-#    do_log "ERROR: no local boot"
-#    sleep 10
-#    exit 1
-#fi
-
-
-
 
 log_end_msg
 
