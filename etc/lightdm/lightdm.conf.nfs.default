@@ -2,9 +2,9 @@
 sessions-directory=/etc/livenet/sessions
 
 [SeatDefaults]
-greeter-session=unity-greeter
+greeter-session=lightdm-webkit-greeter
 greeter-hide-users=true
 allow-guest=false
 user-session=ubuntu
-
+session-setup-script=ln-client --session-start
 session-cleanup-script=ln-client --reset-lightdm

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 . /etc/livenet/livenet.conf
-if [ "${PAM_SERVICE}" = "lightdm" ]; then
+if [ "${PAM_SERVICE}" = "gdm-password" ] || [ "${PAM_SERVICE}" = "lightdm" ]; then
     kill_log_X
 fi
 
