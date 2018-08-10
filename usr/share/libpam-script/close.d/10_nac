@@ -11,7 +11,6 @@ grep -q "^${PAM_USER}:" /etc/passwd
 . /etc/livenet/livenet.conf
 
 if [ "${livenet_8021x}" = "true" ]; then
-	dhclient -r &
     pidof wpa_supplicant
     if [ $? = 0 ]; then
         log_lightdm "WPA logout"
@@ -21,8 +20,7 @@ if [ "${livenet_8021x}" = "true" ]; then
         killall wpa_cli >/dev/null 2>&1
         killall wpa_supplicant >/dev/null 2>&1
         log_lightdm "DHCP wait ..."
-		wait 
-        dhcp_renew
+		netplan apply
     fi
 fi
 
