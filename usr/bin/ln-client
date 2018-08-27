@@ -99,7 +99,7 @@ do_install() {
   zfs set mountpoint=none rpool
   zfs create -o canmount=off -o mountpoint=/home -o overlay=on rpool/home
   zfs create -o canmount=off -o mountpoint=/home/accounts -o overlay=on rpool/home/accounts
-  zfs snapshot /home/accounts@snap0
+  zfs snapshot rpool/home/accounts@snap0
  
   sync
 
