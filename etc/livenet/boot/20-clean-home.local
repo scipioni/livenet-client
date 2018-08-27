@@ -1,8 +1,9 @@
 # cancelliamo le homes temporanee /home/* eccetto /home/ssm
 find /home/ -maxdepth 1 -type d -a ! -name "home" ! -name "ssm" -exec rm -fR {} \;
 
+zfs roolback -r rpool/home/accounts@snap0
 # cancelliamo tutte le homes temporanee /home/*
 #find /home/ -maxdepth 1 -type d -a ! -name "home" ! -name "ssm" -exec rm -fR {} \;
 
 # prepariamo il mount point di autofs
-mkdir -p /home/accounts
+#mkdir -p /home/accounts

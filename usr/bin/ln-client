@@ -60,6 +60,9 @@ do_install() {
     exit 1
   fi
   export DISK
+
+  sync
+
   echo "Deleting all existing partitions"
   sgdisk --clear -g $DISK
   sync
@@ -73,13 +76,13 @@ do_install() {
   sgdisk     -n9:-8M:0    -t9:BF07 $DISK
   
   echo "Boot partition creation"
-  sgdisk     -n4:528M:+2048M -t4:BF00 $DISK
+  sgdisk     -n4:528M:+4096M -t4:BF00 $DISK
   echo "Main partition creation"
   sgdisk     -n1:0:0      -t1:BF01 $DISK
   
   yes |  mkfs.ext4 ${DISK}4
-  e2label ${DISK}4 BOOT 
-
+  e2label ${DISK}4 BOOT
+  sync
   echo "waiting... "
   sleep 5
   echo "Creation of main zfs pool: rpool"
@@ -94,8 +97,16 @@ do_install() {
   #Set mountpoint of rpool to "none"
   #si sposto nell'installazione
   zfs set mountpoint=none rpool
-  
-  . /root/FROM
+  zfs create -o canmount=off -o mountpoint=/home -o overlay=on rpool/home
+  zfs create -o canmount=off -o mountpoint=/home/accounts -o overlay=on rpool/home/accounts
+  zfs snapshot /home/accounts@snap0
+ 
+  sync
+
+  FROM=$(cat /proc/cmdline | cut -d '/' -f 2)
+ #  
+ # #. /root/FROM
+ #
   mkdir -p /tmp/backup
   BACKUPSERVER=$(echo ${LIVENET_ROOT%images*})backups/
 
@@ -106,12 +117,6 @@ do_install() {
   LAST=$(ls *.gz | tail -n 1)
   zcat ${LAST} | zfs recv -F rpool/ROOT/${FROM}
   zfs set mountpoint=/ rpool/ROOT/${FROM}
-  #zfs create -V 1gb rpool/LOCAL
-  #sleep 5
-  #mkfs.ext4 /dev/zvol/rpool/LOCAL
-  # sleep 5  
-  #mkdir /LOCAL
-  #zfs create -o mountpoint=/media/boot  rpool/boot ||
 
   finish_time=$(date +%s)
   echo "Time elapsed until cloning: $(( $(($finish_time - $start_time)) )) seconds." 
@@ -126,10 +131,6 @@ do_install_grub(){
   echo "create boot volume and copy all files"
   
   
-  #zfs mount rpool/ROOT/${FROM}
-  #echo "delete old /boot"
-  #rm -r /boot/
-
   mount --rbind /dev  /mnt/dev
   mount --rbind /proc /mnt/proc
   mount --rbind /sys  /mnt/sys
@@ -142,7 +143,6 @@ do_install_grub(){
     exit 1
   fi
   
-  mkdir /tempmount
   mount -L BOOT /mnt/boot/
   rsync -a /boot/  /mnt/boot/
 
@@ -158,18 +158,15 @@ do_install_grub(){
   
   sync
 
-  umount -lf /mnt/boot
-  umount -lf /mnt/dev/pts
-  umount -lf /mnt/dev
-  umount -lf /mnt/proc
-  umount -lf /mnt/sys
 
+  mount | grep -v bind | tac | awk '/\/mnt/ {print $3}' | xargs -i{} umount -lf {}
   mount | grep -v zfs | tac | awk '/\/mnt/ {print $3}' | xargs -i{} umount -lf {}
   
-  zfs umount rpool/ROOT/${FROM}
+#  zfs umount rpool/ROOT/${FROM}
   zfs set mountpoint=/ rpool/ROOT/${FROM}
   zfs set canmount=on rpool/ROOT/${FROM}
-  
+  zfs set canmount=on rpool/home
+  zfs set canmount=on rpool/home/accounts
 
   zpool export rpool
 
@@ -400,17 +397,20 @@ do_grub_update() {
 
 echo "Updating grub"
          
-#        mount -L BOOT /boot
-        mount --bind / /mnt
+        #mount -L BOOT /boot
+        
+	mount --bind / /mnt
+	mount >> /var/log/grub-update.log
         DIFF_NUM=$(diff -rq /boot /mnt | wc -l)
+	echo $DIFF_NUM >> /var/log/grub-update.log
         if [ "${DIFF_NUM}" -gt "0" ] ; then
-            rsync -a /mnt/boot/ /boot/
+            rsync -av /mnt/boot/ /boot/
             umount /mnt
             /usr/sbin/update-grub
 
             #update-grub
             #mount -L BOOT /boot
-           echo "System last update $(date)" >> /var/lastupdate
+           echo "System last update $(date)" >> /var/log/grub-update.log
         else 
             umount -lf /mnt
         fi

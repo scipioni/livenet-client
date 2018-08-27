@@ -4,19 +4,21 @@
 
 # TODO check if system need kernel update
 
-mount -L BOOT /boot
-mount --bind / /mnt
-DIFF_NUM=`diff -rq /mnt/boot /boot | wc -l`
-if [ "$DIFF_NUM" -gt "0" ] ; then
+#mount /dev/sda4 /boot
+#mount --bind / /mnt
+#sleep 10
+#DIFF_NUM=`diff -rq /mnt/boot /boot | wc -l`
+#echo $DIFF_NUM
+#if [ "$DIFF_NUM" -gt "0" ] ; then
 
-    rsync -a /mnt/boot/ /boot/
-    umount /mnt
-    update-grub
+#    rsync -av /mnt/boot/ /boot/
+#    umount /mnt
+#    update-grub |& tee /var/log/ln.update.log
   
-    echo "System last update $(date)" >> /var/lastupdate
-else 
-    umount -lf /mnt
-fi
+#    echo "System last update $(date)" >> /var/log/lastupdate
+#else 
+#    umount -lf /mnt
+#fi
 
 
 
