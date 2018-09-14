@@ -12,20 +12,26 @@
 #   PAM_TTY     - the controlling tty
 
 
+###[ "${PAM_SERVICE}" = "systemd-user" ] || exit 0
+
+[ "${PAM_SERVICE}" = "lightdm" ] || [ "${PAM_SERVICE}" = "login" ] || exit 0
 [ $(id -u ${PAM_USER}) -lt 500 ] && exit 0
 
 . /etc/livenet/livenet.conf
 set +e
+set -x
+#systemctl restart autofs # dobbiamo resettare la cache 
+
+log_lightdm "Caricamento HOME utente..."
 
 HOME=$(getent passwd ${PAM_USER} | awk -F':' '{print $6}')
+
 localgroups=$( groups ${PAM_USER} )
 
 for SKEL in /etc/skel-${PAM_USER} /etc/skel; do
     [ -d ${SKEL} ] && break
 done
 
-# activate autofs if needed
-ls ${HOME} >/dev/null 2>&1
 
 do_make_home() { 
     echo "Making home=$HOME from skel=$SKEL user=$PAM_USER" | logger -t livenet
@@ -35,29 +41,46 @@ do_make_home() {
     chmod 700 ${HOME}
 }
 
-echo "$localgroups" | grep -q kiosk
-if [ $? = 0 ]; then
+
+ping -c1 homes
+
+stat ${HOME}
+if [ $? = 1 ]; then
+  log_lightdm "Creazione HOME TEMPORANEA..."
+  # se non ho home la creo
+  ORIGINAL=$HOME
+  HOME=/home/tmp/${PAM_USER}
+  do_make_home
+  sleep 1
+  systemctl restart autofs # dobbiamo resettare la cache 
+  stat ${ORIGINAL} #/dev/null 0>&1
+  
+fi
+
+sleep 1
+
+#echo "$localgroups" | grep -q kiosk
+#if [ $? = 0 ]; then
     #################
     # kiosk mode
     #################
 
-    echo "user ${PAM_USER} in kiosk mode" | logger -t livenet
-    rm -fR ${HOME}
-    log_lightdm "Kiosk mode"
-    do_make_home
+#    echo "user ${PAM_USER} in kiosk mode" | logger -t livenet
+#    rm -fR ${HOME}
+#    log_lightdm "Run in kiosk mode" 
+#    do_make_home
+#fi
 
-elif [ -n "${PAM_USER}" ]; then 
-	[ -f ${HOME}/.temporary ] && rm -fR ${HOME}
-
-	if [ ! -d ${HOME} ]; then
-		#################
-		# normal mode
-		#################
-
-		log_lightdm "Home"
-		do_make_home
-    fi
-fi
+#elif [ -n "${PAM_USER}" ]; then 
+#	#[ -f ${HOME}/.temporary ] && rm -fR ${HOME}
+#	if [ ! -d ${HOME} ]; then
+#		#################
+#		# normal mode
+#		#################
+#		log_lightdm "Home creation schemas"
+#		do_make_home
+#    fi
+#fi
 
 exit 0
 

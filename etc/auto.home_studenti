@@ -1,0 +1,6 @@
+#!/bin/sh
+
+/etc/auto.home $1 "homes:/home/accounts/studenti"
+exit 0
+
+

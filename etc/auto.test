@@ -1,0 +1,1 @@
+* -wsize=8192,rsize=8192,vers=4,async,nolock,timeo=1,retry=0,retrans=1 homes:/home/accounts/esterni/& 
