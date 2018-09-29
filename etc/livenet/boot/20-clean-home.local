@@ -1,7 +1,10 @@
 # cancelliamo le homes temporanee /home/* eccetto /home/ssm
-find /home/ -maxdepth 1 -type d -a ! -name "home" ! -name "ssm" -exec rm -fR {} \;
+# se si utilizza zfs, esegue il rollback
+#find /home/ -maxdepth 1 -type d -a ! -name "home" ! -name "ssm" -exec rm -fR {} \;
+LASTSNAP=$(zfs list -t snapshot -o name | grep accounts | tail -1)
 
-zfs roolback -r rpool/home/accounts@snap0
+zfs roolback -r $LASTSNAP
+
 # cancelliamo tutte le homes temporanee /home/*
 #find /home/ -maxdepth 1 -type d -a ! -name "home" ! -name "ssm" -exec rm -fR {} \;
 
