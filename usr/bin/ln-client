@@ -20,8 +20,8 @@ usage()
   cat << EOF
         Usage: $PROGNAME <command> [--help] 
 
-        --install: install livenet on LROOT partition
-	--install-with-gui: install livenet (called by ln-install service)
+        --install: install livenet on client
+	    --install-with-gui: install livenet (called by ln-install service)
         [--force] --boot {local|nfs}: prepare local disk to boot on disk or nfs
         --reset-lightdm: clean lightdm between sessions
         --session-wait: exec ratpoison session with message
@@ -30,7 +30,7 @@ usage()
         --kiosk: kiosk session
         --kiosk-loop: kiosk session
         --monitors-clone: clone second monitor (if connected) to first monitor
-	--grub-update: run grub-update if needed
+	    --grub-update: run grub-update if needed
 
         Options:
 EOF
@@ -43,8 +43,9 @@ ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGN
 
 eval set -- "$ARGS"
 
+
+#start install process
 do_install() {
-  #DEVICE=ens3
   start_time=$(date +%s)
   #Check if disk is fisical or virtual device
   #CLEAN DISK
@@ -58,11 +59,11 @@ do_install() {
   
   #update disk status 
   sync
-  #check if your system need a GPT table
+  #check if your system need a GPT or MBR
   if [ -d "/sys/firmware/efi" ]; then
         part4efi
         installFromBackup
-        grubInstall4Efi
+        do_install_grub_efi
   else
         part4legacy
         installFromBackup  
@@ -71,21 +72,23 @@ do_install() {
 
 }
 
+#This funciotn create a minimal partition schemas for Legacy installation 
 part4legacy(){
-  echo "Deleting all existing partitions"
+  echo "Deleting all existing partitions and use MBR"
   parted -a optimal -s $DISK mklabel msdos
   
   sync
   echo "boot partition creation, type ext4"
   parted -a optimal -s $DISK mkpart primary ext4 0% 20%
+  echo "ZPOOL partition creation"
   parted -a optimal -s $DISK mkpart primary 20% 100%
+
   parted $DISK set 1 boot on # needed for embedding grub in this partition 
  
   yes |  mkfs.ext4 -F  ${DISK}1
   e2label ${DISK}1 BOOT
+
   sync
-  echo "waiting... "
-  sleep 5
   echo "Creation of main zfs pool: rpool"
   zpool create -o ashift=12 \
       -O atime=off -O canmount=off -O compression=lz4 -O normalization=formD \
@@ -95,11 +98,14 @@ part4legacy(){
   echo "Creation of volume: rpool/ROOT"
   zfs create -o canmount=off -o mountpoint=none rpool/ROOT
   echo "Cloning latest backup from server"
-  #Set mountpoint of rpool to "none"
-  #si sposto nell'installazione
   zfs set mountpoint=none rpool
   zfs create -o canmount=off -o mountpoint=/home -o overlay=on rpool/home
   zfs create -o canmount=off -o mountpoint=/home/accounts -o overlay=on rpool/home/accounts
+  #volume for vms
+  zfs create -o canmount=off -o mountpoint=/vms rpool/vms
+  #jolly volume
+  zfs create -o canmount=off -o mountpoint=/LOCAL rpool/LOCAL
+  #snapshost for home cleaning 
   zfs snapshot rpool/home/accounts@snap0
  
   sync
@@ -151,20 +157,22 @@ part4efi(){
 }
 installFromBackup(){
   #get the name of NFS image
-  TMP_MOUNT="/tmp/backup"
+  TMP_MOUNT="/tmp/backup/"
   FROM=$(cat /proc/cmdline | cut -d '/' -f 2)
   mkdir -p $TMP_MOUNT
   #get the path of backups directory
   BACKUPSERVER=$(echo ${LIVENET_ROOT%images*})backups/
   mount -t nfs ${BACKUPSERVER} $TMP_MOUNT
-  cd $TMP_MOUNT/${FROM}
+  cd $TMP_MOUNT${FROM}
   echo "Get backup image"
   LAST=$(ls $TMP_MOUNT/${FROM}/*.gz | sort -n -r  | head -1)
   zcat ${LAST} | zfs recv -F rpool/ROOT/${FROM}
+  cd ~
   zfs set mountpoint=/ rpool/ROOT/${FROM}
   finish_time=$(date +%s)
   echo "Time elapsed until cloning: $(( $(($finish_time - $start_time)) )) seconds."
-  umount $TMP_MOUNT
+  sync
+  umount -f $TMP_MOUNT
 }
 
 do_install_grub_legacy(){  
@@ -176,14 +184,17 @@ do_install_grub_legacy(){
   mount --rbind /dev  /mnt/dev
   mount --rbind /proc /mnt/proc
   mount --rbind /sys  /mnt/sys
-  
+
   echo "Installing boot loader"  
-  mount -L BOOT /mnt/boot/
-  rsync -av /boot/  /mnt/boot/
-  
+  mkdir -p /media/BOOT
+  mount -L BOOT /media/BOOT
+  rsync -av /mnt/boot/  /media/BOOT
+  sync
+  umount -f /media/BOOT
+  mount -L BOOT /mnt/boot
   echo -n " boot=livenet profile=${PROFILE} " > /mnt/boot/grub.options
   
-  chroot /mnt /bin/bash -c "mount -a"
+  #chroot /mnt /bin/bash -c "mount -a"
   chroot /mnt /bin/bash -c "grub-install ${DISK}"
   echo "update grub menu"
 
@@ -209,7 +220,7 @@ do_install_grub_legacy(){
 }
 
 
-grubInstall4Efi(){
+do_install_grub_efi(){
     echo "create boot volume and copy all files"
     if [ ! -f /mnt/initrd.img ]; then
         zfs mount rpool/ROOT/${FROM}
