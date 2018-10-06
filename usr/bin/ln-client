@@ -23,7 +23,6 @@ usage()
         --install: install livenet on LROOT partition
 	--install-with-gui: install livenet (called by ln-install service)
         [--force] --boot {local|nfs}: prepare local disk to boot on disk or nfs
-        --standalone: revert image to standalone mode
         --reset-lightdm: clean lightdm between sessions
         --session-wait: exec ratpoison session with message
         --user <user> --scan <path>: execute clamav and remount share in rw for user
@@ -31,7 +30,6 @@ usage()
         --kiosk: kiosk session
         --kiosk-loop: kiosk session
         --monitors-clone: clone second monitor (if connected) to first monitor
-	--vboxsetup: rebuild virtualbox modules
 	--grub-update: run grub-update if needed
 
         Options:
@@ -48,10 +46,7 @@ eval set -- "$ARGS"
 do_install() {
   #DEVICE=ens3
   start_time=$(date +%s)
-
- #zpool destroy rpool
-  # FIND FIRST DISK FOR ROOT
-  #DISK=$(find /dev/disk/ -type l -ilname "*da" | grep by-id )
+  #Check if disk is fisical or virtual device
   #CLEAN DISK
   DISK=/dev/sda 
   [ -b $DISK ] || DISK=/dev/vda 
@@ -60,9 +55,59 @@ do_install() {
     exit 1
   fi
   export DISK
+  
+  #update disk status 
+  sync
+  #check if your system need a GPT table
+  if [ -d "/sys/firmware/efi" ]; then
+        part4efi
+        installFromBackup
+        grubInstall4Efi
+  else
+        part4legacy
+        installFromBackup  
+        do_install_grub_legacy
+  fi
 
+}
+
+part4legacy(){
+  echo "Deleting all existing partitions"
+  parted -a optimal -s $DISK mklabel msdos
+  
+  sync
+  echo "boot partition creation, type ext4"
+  parted -a optimal -s $DISK mkpart primary ext4 0% 20%
+  parted -a optimal -s $DISK mkpart primary 20% 100%
+  parted $DISK set 1 boot on # needed for embedding grub in this partition 
+ 
+  yes |  mkfs.ext4 -F  ${DISK}1
+  e2label ${DISK}1 BOOT
+  sync
+  echo "waiting... "
+  sleep 5
+  echo "Creation of main zfs pool: rpool"
+  zpool create -o ashift=12 \
+      -O atime=off -O canmount=off -O compression=lz4 -O normalization=formD \
+      -O mountpoint=none -R /mnt -f \
+      rpool ${DISK}2
+  
+  echo "Creation of volume: rpool/ROOT"
+  zfs create -o canmount=off -o mountpoint=none rpool/ROOT
+  echo "Cloning latest backup from server"
+  #Set mountpoint of rpool to "none"
+  #si sposto nell'installazione
+  zfs set mountpoint=none rpool
+  zfs create -o canmount=off -o mountpoint=/home -o overlay=on rpool/home
+  zfs create -o canmount=off -o mountpoint=/home/accounts -o overlay=on rpool/home/accounts
+  zfs snapshot rpool/home/accounts@snap0
+ 
   sync
 
+}
+
+
+part4efi(){
   echo "Deleting all existing partitions"
   sgdisk --clear -g $DISK
   sync
@@ -102,80 +147,107 @@ do_install() {
   zfs snapshot rpool/home/accounts@snap0
  
   sync
-
+ 
+}
+installFromBackup(){
+  #get the name of NFS image
+  TMP_MOUNT="/tmp/backup"
   FROM=$(cat /proc/cmdline | cut -d '/' -f 2)
-
-  mkdir -p /tmp/backup
+  mkdir -p $TMP_MOUNT
+  #get the path of backups directory
   BACKUPSERVER=$(echo ${LIVENET_ROOT%images*})backups/
-
-  mount -t nfs ${BACKUPSERVER} /tmp/backup
-
-  cd /tmp/backup/${FROM}
+  mount -t nfs ${BACKUPSERVER} $TMP_MOUNT
+  cd $TMP_MOUNT/${FROM}
   echo "Get backup image"
-  LAST=$(ls *.gz | tail -n 1)
+  LAST=$(ls $TMP_MOUNT/${FROM}/*.gz | sort -n -r  | head -1)
   zcat ${LAST} | zfs recv -F rpool/ROOT/${FROM}
   zfs set mountpoint=/ rpool/ROOT/${FROM}
-
   finish_time=$(date +%s)
-  echo "Time elapsed until cloning: $(( $(($finish_time - $start_time)) )) seconds." 
-  do_install_grub
- 
-
+  echo "Time elapsed until cloning: $(( $(($finish_time - $start_time)) )) seconds."
+  umount $TMP_MOUNT
 }
 
-
-do_install_grub(){  
+do_install_grub_legacy(){  
   
   echo "create boot volume and copy all files"
-  
-  
+  if [ ! -f /mnt/initrd.img ]; then
+    zfs mount rpool/ROOT/${FROM}
+  fi
   mount --rbind /dev  /mnt/dev
   mount --rbind /proc /mnt/proc
   mount --rbind /sys  /mnt/sys
   
-  echo "Installing boot loader"
-  DISK=/dev/sda 
-  [ -b $DISK ] || DISK=/dev/vda 
-  if [ ! -b $DISK ]; then
-    echo "NO vda o sda found"
-    exit 1
-  fi
-  
+  echo "Installing boot loader"  
   mount -L BOOT /mnt/boot/
-  rsync -a /boot/  /mnt/boot/
-
+  rsync -av /boot/  /mnt/boot/
+  
   echo -n " boot=livenet profile=${PROFILE} " > /mnt/boot/grub.options
   
-  #umount -lf /tempmount
-
-  #chroot /mnt /bin/bash -c "mount -a"
+  chroot /mnt /bin/bash -c "mount -a"
   chroot /mnt /bin/bash -c "grub-install ${DISK}"
   echo "update grub menu"
 
   chroot /mnt /bin/bash -c "update-grub"  
   
   sync
-
-
+  
   mount | grep -v bind | tac | awk '/\/mnt/ {print $3}' | xargs -i{} umount -lf {}
   mount | grep -v zfs | tac | awk '/\/mnt/ {print $3}' | xargs -i{} umount -lf {}
   
-#  zfs umount rpool/ROOT/${FROM}
   zfs set mountpoint=/ rpool/ROOT/${FROM}
   zfs set canmount=on rpool/ROOT/${FROM}
   zfs set canmount=on rpool/home
   zfs set canmount=on rpool/home/accounts
 
+  mount | grep -v zfs | tac | awk '/\/mnt/ {print $3}' | xargs -i{} umount -lf {}
+
   zpool export rpool
 
   echo "FINISH, reboot"
-  #??????????????
-  systemctl --force --force reboot
-  #echo 1 > /proc/sys/kernel/sysrq
-  #echo b > /proc/sysrq-trigger
-
+  #systemctl --force --force reboot
+  
 }
 
+
+grubInstall4Efi(){
+    echo "create boot volume and copy all files"
+    if [ ! -f /mnt/initrd.img ]; then
+        zfs mount rpool/ROOT/${FROM}
+    fi
+    mount --rbind /dev  /mnt/dev
+    mount --rbind /proc /mnt/proc
+    mount --rbind /sys  /mnt/sys
+  
+    echo "Installing boot loader"  
+    mount -L BOOT /mnt/boot/
+    rsync -av /boot/  /mnt/boot/
+  
+    echo -n " boot=livenet profile=${PROFILE} " > /mnt/boot/grub.options
+  
+    chroot /mnt /bin/bash -c "mount -a"
+    chroot /mnt /bin/bash -c "grub-install ${DISK}"
+    echo "update grub menu"
+
+    chroot /mnt /bin/bash -c "update-grub"  
+  
+    sync
+  
+    mount | grep -v bind | tac | awk '/\/mnt/ {print $3}' | xargs -i{} umount -lf {}
+    mount | grep -v zfs | tac | awk '/\/mnt/ {print $3}' | xargs -i{} umount -lf {}
+  
+    zfs set mountpoint=/ rpool/ROOT/${FROM}
+    zfs set canmount=on rpool/ROOT/${FROM}
+    zfs set canmount=on rpool/home
+    zfs set canmount=on rpool/home/accounts
+
+    mount | grep -v zfs | tac | awk '/\/mnt/ {print $3}' | xargs -i{} umount -lf {}
+
+    zpool export rpool
+
+    echo "FINISH, reboot"
+    systemctl --force --force reboot
+
+ }
 do_boot() {
     ROOTMOUNTED=$1
     set +e
@@ -191,74 +263,7 @@ do_boot() {
     set -e
 }
 
-do_standalone() {
-    for f in /etc/initramfs-tools/initramfs.conf \
-        /etc/network/interfaces \
-        /etc/rsyslog.conf \
-        /etc/auto.master \
-        /etc/kernel-img.conf \
-        /etc/kernel/postinst.d/zz-update-grub; do
-        [ -h ${f} ] && rm -f ${f}
-        cp -a /livenet/${f}.local.standalone ${f}
-        #update-alternatives --remove-all $(basename $f) >/dev/null 2>&1
-    done
-    
-    cp -a /etc/fstab.local.default /etc/fstab
 
-    rm -f /etc/init/network-manager.override
-    
-    rm -f /etc/kernel/postinst.d/zz-livenet
-
-    chmod +x /usr/lib/accountsservice/accounts-daemon
-    chmod +x /etc/init.d/unattended-upgrades
-    chmod +x /usr/bin/zeitgeist-datahub 
-    chmod +x /usr/bin/zeitgeist-daemon 
-    chmod +x /usr/lib/zeitgeist/zeitgeist-fts
-
-    rm -f /usr/sbin/policy-rc.d
-
-    # revert without ldap
-    auth-client-config -a -p lac_ldap -r >/dev/null 2>&1
-
-    apt-get remove --purge --yes nslcd nscd
-    
-    update-initramfs -u
-
-    pam-auth-update
-
-    chmod -x /etc/livenet/boot/*
-    rm /etc/debian_chroot
-    userdel guest
-
-    # enable dynamic resolvconf
-    dpkg-reconfigure resolvconf
-    echo -n > /etc/resolvconf/resolv.conf.d/original
-
-    # or commenting dns=dnsmasq in /etc/NetworkManager/NetworkManager.conf
-}
-
-
-do_sync_state() {
-    export LANG=en
-
-    SERVERRW=$( echo ${LIVENET_ROOT} | sed -n -r "s|^(.+):.+$|\1| p" )
-    [ -z "${SERVERRW}" ] && ( echo "no SERVERRW defined" && exit 1 )
-
-    MAC=$( ifconfig ${DEVICE} | sed -n -r "s|^.*HWaddr ([A-Za-z0-9:]+).*$|\1| p" | tr -d ':' | tr '[a-z]' '[A-Z]' )
-
-    mount -n -o rw,atime -o ${NFSOPTS} ${SERVERRW}:${STATENFS}/${MAC}_${RELEASE} /${STATETMP}/persistent
-
-    cd /${STATETMP}
-
-    # o così
-    rsync -av --delete --exclude '*.wh.*' etc persistent
-
-    # o pomì
-    # rm -fR persistent/*
-    #find etc -depth -not -name '.wh.*' -print0 | cpio --null -pud persistent 2>/dev/null
-
-    umount /${STATETMP}/persistent
-}
         
 do_session_wait() {
     ratpoison &
@@ -368,34 +373,14 @@ do_monitors_clone() {
     fi
 }
 
-do_vboxsetup() {
-    PACKAGE=$( dpkg -l | egrep "ii\s+virtualbox" | awk '{ print $2 }' )
-    if [ -z "${PACKAGE}" ]; then
-        echo "Virtualbox is not installed"
-        exit 1
-    fi
-    VERSION=$( dpkg -s ${PACKAGE} | sed -n 's|^Version: \([0-9\.]\+\).*|\1|p' )
-    /usr/share/virtualbox/src/vboxhost/do_dkms uninstall vboxhost vboxdrv vboxnetflt vboxnetadp
-    cat > /tmp/dkms <<EOF
-#!/bin/sh
-
-KERNEL_VERSION=\$( ls -X /lib/modules | tail -n1 )
-exec /usr/sbin/dkms -k \${KERNEL_VERSION} \$*
-EOF
-
-    chmod +x /tmp/dkms
-    export PATH=/tmp:${PATH}
-    /usr/share/virtualbox/src/vboxhost/do_dkms install vboxhost ${VERSION}
-    rm -f /tmp/dkms
-}
 
 
 
 do_grub_update() {
 
-echo "Updating grub"
+    echo "Updating grub"
          
-        #mount -L BOOT /boot
+    #mount -L BOOT /boot
         
 	mount --bind / /mnt
 	mount >> /var/log/grub-update.log
@@ -508,11 +493,6 @@ while true; do
       --monitors-clone)
         do_monitors_clone
         break
-        ;;
-      --vboxsetup)
-        shift
-        do_vboxsetup $1
-        exit 0
         ;;
       --grub-update)
 	do_grub_update
