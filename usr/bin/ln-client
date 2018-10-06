@@ -80,7 +80,7 @@ do_install() {
   echo "Main partition creation"
   sgdisk     -n1:0:0      -t1:BF01 $DISK
   
-  yes |  mkfs.ext4 ${DISK}4
+  yes |  mkfs.ext4 -F  ${DISK}4
   e2label ${DISK}4 BOOT
   sync
   echo "waiting... "
@@ -104,9 +104,7 @@ do_install() {
   sync
 
   FROM=$(cat /proc/cmdline | cut -d '/' -f 2)
- #  
- # #. /root/FROM
- #
+
   mkdir -p /tmp/backup
   BACKUPSERVER=$(echo ${LIVENET_ROOT%images*})backups/
 
