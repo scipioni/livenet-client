@@ -80,7 +80,7 @@ if [ $? = 0 ]; then
 		NUMBERVALUE=$(echo ${UPDATE_FILE} | cut -d '.' -f 1 )
 		NUMBERVALUE=${NUMBERVALUE##*/}
 
-		let "$N_UPDATES += 1"
+		let "N_UPDATES += 1"
 		if test "${NUMBERVALUE}" ">" "${LAST_SNAP_TS}"; then
 		   # ROLLBACK to latest snapshot only first time
 			if [ ${NEED_ROOLBACK} -gt ${ZERO} ]; then
@@ -91,7 +91,7 @@ if [ $? = 0 ]; then
 			fi
 
 			start_time=$(date +%s)
-			echo "INSTALLING " $(basename ${UPDATE_FILE}) " (> $LAST_SNAP) ..."
+			echo "INSTALLING $(basename ${UPDATE_FILE}) on $LAST_SNAP) ..."
 			zcat "${UPDATE_FILE}" | zfs receive -F ${ROOT_VOLUME}
 		   # ( zcat ${UPDATE_FILE} | zfs receive -F ${ROOT_VOLUME} ) &
 			## sleep 2 && kill -9 1
