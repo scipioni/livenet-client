@@ -60,12 +60,12 @@ for x in /run/net-"${DEVICE}".conf /run/net-*.conf /tmp/net-*conf; do
 done 
 
 #make mount point in to initramfs 
-mkdir /mnt
+mkdir -p /mnt
 
 
 #mount updates
-do_log " mount remote path for increases"  
-mount.nfs -o timeo=5 ${LIVENET_ROOT_IP}:/livenet/increases /mnt/
+do_log " mount remote path for update"  
+mount.nfs -o timeo=5 ${LIVENET_ROOT_UPGRADES_PATH} /mnt
 if [ $? = 0 ]; then
 	#Install all updates
 	N_UPDATES=0
@@ -80,7 +80,7 @@ if [ $? = 0 ]; then
 		NUMBERVALUE=$(echo ${UPDATE_FILE} | cut -d '.' -f 1 )
 		NUMBERVALUE=${NUMBERVALUE##*/}
 
-		let "N_UPDATES += 1"
+		let "$N_UPDATES += 1"
 		if test "${NUMBERVALUE}" ">" "${LAST_SNAP_TS}"; then
 		   # ROLLBACK to latest snapshot only first time
 			if [ ${NEED_ROOLBACK} -gt ${ZERO} ]; then
