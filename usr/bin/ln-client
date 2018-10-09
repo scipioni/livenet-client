@@ -80,9 +80,10 @@ part4legacy(){
   sync
   echo "boot partition creation, type ext4"
   parted -a optimal -s $DISK mkpart primary ext4 0% 20%
+  sync
   echo "ZPOOL partition creation"
   parted -a optimal -s $DISK mkpart primary 20% 100%
-
+  sync
   parted $DISK set 1 boot on # needed for embedding grub in this partition 
  
   yes |  mkfs.ext4 -F  ${DISK}1
@@ -215,7 +216,7 @@ do_install_grub_legacy(){
   zpool export rpool
 
   echo "FINISH, reboot"
-  #systemctl --force --force reboot
+  systemctl --force --force reboot
   
 }
 
