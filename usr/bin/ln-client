@@ -4,7 +4,6 @@
 
 PROGNAME=${0##*/}
 PROGVERSION=0.1.0
-set -e
 
 check_jail() {
     if [ ! "`< /etc/hostname`" = "`hostname`" ]; then
@@ -66,13 +65,56 @@ do_install() {
         do_install_grub_efi
   else
         part4legacy
-        installFromBackup  
+#WindowsPart
+        installFromBackup
         do_install_grub_legacy
   fi
 
 }
 
 #This funciotn create a minimal partition schemas for Legacy installation 
+WindowsPart(){
+set -x
+   #get list of no windows part
+   for i in $(lsblk -l -o NAME,FSTYPE | grep ".da[0-9]" | egrep -vi "ntfs|fat" | cut -c 4); do
+
+	   #delete n-esima part
+	   echo "delete $i-esima part"
+	   parted $DISK rm $i
+   done
+   sync
+   #get end of last part ex sda2
+   #ENDLAST=$(sfdisk -l -o DEVICE,END | grep sda2 | awk '{print $2}')
+   #get first block
+   STARTMB=$(LANG=en parted $DISK unit mb print free | tail -2 | awk '{print $1}' | sed 's/[^0-9]*//g')
+   STARTMB=$(($STARTMB+1))
+   ENDMB=$(($STARTMB+4096))
+   #create boot partition
+   parted -a optimal -s $DISK mkpart primary ext4  ${STARTMB}M  ${ENDMB}M
+   
+   N=$(parted ${DISK} unit mb print | grep ${STARTMB} | awk '{print $1}')
+   yes | mkfs.ext4 ${DISK}${N}
+   e2label ${DISK}${N} BOOT
+   parted $DISK set ${N} boot on # needed for embedding grub in this partition 
+
+   STARTMB=$(LANG=en parted $DISK unit mb print free | tail -2 | awk '{print $1}' | sed 's/[^0-9]*//g')
+   STARTMB=$(($STARTMB+1))
+   parted -a optimal -s $DISK mkpart primary zfs  ${STARTMB}M  -- -1M
+   N=$(parted ${DISK} unit mb print | grep ${STARTMB} | awk '{print $1}')
+
+   #mkfs.ext4 ${DISK}${N}
+   #e2label ${DISK}${N} LROOT
+   echo "partition ok"
+   zpool create  \
+      -O atime=off -O canmount=off -O compression=off -O normalization=formD \
+      -O mountpoint=none -R /mnt -f \
+      rpool ${DISK}${N}
+
+   createvol
+}
+
+
+
 part4legacy(){
   echo "Deleting all existing partitions and use MBR"
   parted -a optimal -s $DISK mklabel msdos
@@ -91,11 +133,18 @@ part4legacy(){
 
   sync
   echo "Creation of main zfs pool: rpool"
+
   zpool create -o ashift=12 \
-      -O atime=off -O canmount=off -O compression=lz4 -O normalization=formD \
+      -O atime=off -O canmount=off -O compression=off -O normalization=formD \
       -O mountpoint=none -R /mnt -f \
       rpool ${DISK}2
-  
+
+  createvol
+}
+
+
+createvol(){
+set -x
   echo "Creation of volume: rpool/ROOT"
   zfs create -o canmount=off -o mountpoint=none rpool/ROOT
   echo "Cloning latest backup from server"
@@ -216,7 +265,7 @@ do_install_grub_legacy(){
   zpool export rpool
 
   echo "FINISH, reboot"
-  systemctl --force --force reboot
+  #systemctl --force --force reboot
   
 }
 
@@ -328,7 +377,7 @@ do_kiosk() {
     ratpoison &
     wmpid=$!
     sleep 2 # Wait until ratpoison starts up.
-    PATH=/opt/firefox:${PATH}
+    PATH=/usr/bin//firefox:${PATH}
 
     if [ -f ~/.run ]; then
     	exec ~/.run 
@@ -350,7 +399,7 @@ ratpoison &
     xscreensaver -nosplash &
     wmpid=$!
     sleep 2 # Wait until ratpoison starts up.
-    PATH=/opt/firefox:${PATH}
+    PATH=/usr/bin/firefox:${PATH}
 
     if [ -f ~/.url_to_open ]; then
         URL=$(cat ~/.url_to_open)
@@ -398,8 +447,8 @@ do_grub_update() {
 	mount >> /var/log/grub-update.log
         DIFF_NUM=$(diff -rq /boot /mnt/boot | wc -l)
 	echo $DIFF_NUM >> /var/log/grub-update.log
-        if [ "${DIFF_NUM}" -gt "0" ] ; then
-            rsync -av --delete /boot/ /mnt/boot
+        if [ "${DIFF_NUM}" -gt "2" ] ; then
+            rsync -av /mnt/boot/ /boot/
             umount /mnt
             /usr/sbin/update-grub
 
@@ -409,10 +458,6 @@ do_grub_update() {
         else 
             umount -lf /mnt
         fi
-
-
-
-
 
 }
 
@@ -437,8 +482,8 @@ while true; do
 	   exit 0
 	fi
         check_jail
-    #	update-alternatives --set lightdm.conf /etc/lightdm/lightdm.conf.nfs.special
-	#systemctl restart lightdm
+    	update-alternatives --set lightdm.conf /etc/lightdm/lightdm.conf.nfs.special
+	systemctl restart lightdm
 	do_install
     	sleep 5
     	update-alternatives /etc/lightdm/lightdm.conf
