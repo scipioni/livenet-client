@@ -396,10 +396,10 @@ do_grub_update() {
         
 	mount --bind / /mnt
 	mount >> /var/log/grub-update.log
-        DIFF_NUM=$(diff -rq /boot /mnt | wc -l)
+        DIFF_NUM=$(diff -rq /boot /mnt/boot | wc -l)
 	echo $DIFF_NUM >> /var/log/grub-update.log
         if [ "${DIFF_NUM}" -gt "0" ] ; then
-            rsync -av /mnt/boot/ /boot/
+            rsync -av --delete /boot/ /mnt/boot
             umount /mnt
             /usr/sbin/update-grub
 
