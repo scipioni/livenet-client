@@ -36,7 +36,7 @@ EOF
 }
 
 SHORTOPTS="hv"
-LONGOPTS="help,version,install,install-with-gui,grub-update,boot:,force,standalone,sync-state,reset-lightdm,session-wait,user:,scan:,shutdown,kiosk,kiosk-loop,monitors-clone,vboxsetup"
+LONGOPTS="help,version,install,install-with-gui,ramflush,grub-update,boot:,force,standalone,sync-state,reset-lightdm,session-wait,user:,scan:,shutdown,kiosk,kiosk-loop,monitors-clone,vboxsetup"
 
 ARGS=$(getopt -s bash --options $SHORTOPTS --longoptions $LONGOPTS --name $PROGNAME -- "$@" )
 
@@ -462,6 +462,13 @@ do_grub_update() {
 }
 
 
+do_ramflush() {
+    sync
+    echo 3 > /proc/sys/vm/drop_caches
+    echo 1 > /proc/sys/vm/compact_memory
+
+}
+
 while true; do
    case $1 in
       -h|--help)
@@ -471,6 +478,10 @@ while true; do
       -v|--version)
         echo "$PROGVERSION"
         ;;
+      --ramflush)
+      do_ramflush
+      break;
+      ;;
       --install)
         check_jail
 	do_install
