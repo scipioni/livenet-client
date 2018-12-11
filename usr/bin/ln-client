@@ -23,6 +23,7 @@ usage()
 	    --install-with-gui: install livenet (called by ln-install service)
         [--force] --boot {local|nfs}: prepare local disk to boot on disk or nfs
         --reset-lightdm: clean lightdm between sessions
+        --ramflush: clean ram
         --session-wait: exec ratpoison session with message
         --user <user> --scan <path>: execute clamav and remount share in rw for user
         --shutdown: called from acpid. Used to shutdown only in lightdm login screen.
@@ -464,8 +465,8 @@ do_grub_update() {
 
 do_ramflush() {
     sync
-    echo 3 > /proc/sys/vm/drop_caches
-    echo 1 > /proc/sys/vm/compact_memory
+    sudo /sbin/sysctl vm.drop_caches=3
+    sudo /sbin/sysctl vm.compact_memory=1 
 
 }
 
