@@ -15,8 +15,10 @@ prereqs)
        ;;
 esac
 echo $DESCRIPTION
+. /conf/livenet.conf
 . /scripts/functions
 . /scripts/functions-livenet
+
 log_begin_msg "$DESCRIPTION"
 
 if [ -z "${ROOT}" ]; then
@@ -62,7 +64,6 @@ done
 #make mount point in to initramfs 
 mkdir -p /mnt
 
-
 #mount updates
 do_log " mount remote path for update"  
 mount.nfs -o timeo=5 ${LIVENET_ROOT_UPGRADES_PATH} /mnt
@@ -79,23 +80,13 @@ if [ $? = 0 ]; then
 		##old  NUMBERVALUE=$(echo ${UPDATE_FILE} | cut -d '.' -f 1 | rev | cut -d '/' -f 1 | rev)
 		NUMBERVALUE=$(echo ${UPDATE_FILE} | cut -d '.' -f 1 )
 		NUMBERVALUE=${NUMBERVALUE##*/}
+		N_UPDATES=$((N_UPDATES+1))
 
-		let "N_UPDATES += 1"
 		if test "${NUMBERVALUE}" ">" "${LAST_SNAP_TS}"; then
 		   # ROLLBACK to latest snapshot only first time
-			if [ ${NEED_ROOLBACK} -gt ${ZERO} ]; then
-				echo "Before of all, rollback the volume to the latest snapshot only one time"
-				echo "Rollback to ${LAST_SNAP}"
-				zfs rollback ${LAST_SNAP}
-				NEED_ROLLBACK=0
-			fi
-
 			start_time=$(date +%s)
 			echo "INSTALLING $(basename ${UPDATE_FILE}) on $LAST_SNAP) ..."
 			zcat "${UPDATE_FILE}" | zfs receive -F ${ROOT_VOLUME}
-		   # ( zcat ${UPDATE_FILE} | zfs receive -F ${ROOT_VOLUME} ) &
-			## sleep 2 && kill -9 1
-			#wait
 		   
 			#presuppongo che se zfs receive fallisce vale l'ultimo
 			end_time=$(date +%s)
@@ -104,89 +95,31 @@ if [ $? = 0 ]; then
 			LAST_SNAP_TS=$(echo $LAST_SNAP | cut -d '@' -f 2)
 			#echo "The system have install ${UPDATE_FILE} on the volume ${ROOT_VOLUME}, the most recent snapshot of the volume is ${LAST_SNAP}"
 			echo "  elapsed time: $(( $((end_time - start_time)) )) sec."
-			let "N_UPDATES_DONE += 1"
+         		N_UPDATES=$((N_UPDATES+1))
 			echo "Install next update"
 			#sleep 1
 		fi
 	done
 	end_time_all=$(date +%s)
-    #echo " "
-	#echo "Your system installed ${N_UPDATES_DONE} in $((end_time_all - start_time_all)) seconds"
-    #echo " "
+	echo "Your system installed ${N_UPDATES} in $((end_time_all - start_time_all)) seconds"
+	umount /mnt
+	if [[ $(mount | grep /mnt/ | wc -l) -gt 0 ]]; then
+		#if there are some promblems with umount, bye bye
+    		umount -lf /mnt/
+	fi
+
 else
     do_log " cannot mount remote nfs ${LIVENET_ROOT_IP} "
     sleep 10
 fi
 
-
+#return to root
 cd /
 
-umount /mnt
-if [[ $(mount | grep /mnt/ | wc -l) -gt 0 ]]; then
-#if there are some promblems with umount, bye bye
-    umount -lf /mnt/
-fi
 
-zfs set mountpoint=/mnt ${ROOT_VOLUME}
-#mount senza alterare
-zfs mount ${ROOT_VOLUME}
-mount --rbind /dev /mnt/dev
-mount --rbind /proc /mnt/proc
-mount --rbind /sys /mnt/sys
- 
-
-DISK=/dev/sda 
-  [ -b $DISK ] || DISK=/dev/vda 
-  if [ ! -b $DISK ]; then
-    echo "NO vda o sda found"
-    exit 1
-  fi
-
-#install grub
-#moved
-#chroot /mnt /bin/bash -c "grub-install $DISK"
-sleep 1
-#chroot /mnt /bin/bash -c "update-grub" 
-sleep 1
-
-#umount
-umount /mnt/proc
-umount /mnt/sys
-umount /mnt/dev/pts
-umount /mnt/dev
-umount /mnt/
-
-#mount | grep -v zfs | tac | awk '/\/mnt/ {print $3}' | xargs -i{} umount -lf {}
-
-#
 zfs set mountpoint=/ ${ROOT_VOLUME}
-sleep 1
 zpool export rpool
-sleep 1
 
-
-# traslate UUID into file block
-#echo "$ROOT" | grep -q "UUID="
-#if [ $? = 0 ]; then
-#    eval $ROOT # to have UUID=
-#    ROOT=/dev/disk/by-uuid/$UUID
-#fi
-
-#eval $(fstype < ${ROOT}) # Get the root filesystem type
-#modprobe ${FSTYPE}
-
-
-
-#Check if there are some updates for me
-
-#run get_updates
-
-#Check if all is ok
-#TODO
-
-#Continue with boot
-
-#do_debug_shell
 
 for x in /run/net-"${DEVICE}".conf /run/net-*.conf /tmp/net-*.conf; do
     ROOTMOUNTED=local
